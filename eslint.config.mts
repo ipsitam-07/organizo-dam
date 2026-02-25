@@ -3,6 +3,7 @@ import tsParser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import prettierPlugin from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
+import globals from "globals";
 
 export default [
   {
@@ -38,22 +39,22 @@ export default [
   },
 
   {
-    files: ["apps/api/**/*.ts"],
-    languageOptions: {
-      globals: {
-        process: "readonly",
-        __dirname: "readonly"
-      },
-    },
+  files: ["apps/api/**/*.{ts,js}"],
+  languageOptions: {
+    globals: globals.node,
+  },
   },
 
   {
-    files: ["apps/web/**/*.{ts,tsx}"],
-    languageOptions: {
-      globals: {
-        window: "readonly",
-        document: "readonly",
-      },
-    },
+  files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
+  languageOptions: {
+    globals: globals.browser,
+  },
+  },
+    {
+  files: ["packages/**/*.{ts,tsx,js,jsx}"],
+  languageOptions: {
+    globals: globals.browser,
+  },
   },
 ];
