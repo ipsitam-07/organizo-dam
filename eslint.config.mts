@@ -38,17 +38,17 @@ export default [
   },
 
   {
-    files: ["backend/**/*.ts"],
+    files: ["apps/api/**/*.ts"],
     languageOptions: {
       globals: {
         process: "readonly",
-        __dirname: "readonly",
+        __dirname: "readonly"
       },
     },
   },
 
   {
-    files: ["frontend/**/*.{ts,tsx}"],
+    files: ["apps/web/**/*.{ts,tsx}"],
     languageOptions: {
       globals: {
         window: "readonly",
