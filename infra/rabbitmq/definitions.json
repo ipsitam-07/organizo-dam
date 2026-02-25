@@ -1,0 +1,167 @@
+{
+  "vhosts": [{ "name": "dam" }],
+  "users": [
+    {
+      "name": "dam_rabbit",
+      "password": "rabbitpass",
+      "tags": "administrator"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "dam_rabbit",
+      "vhost": "dam",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "dam.uploads",
+      "vhost": "dam",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "dam.processing",
+      "vhost": "dam",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "dam.events",
+      "vhost": "dam",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "dam.dlx",
+      "vhost": "dam",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "asset-processing",
+      "vhost": "dam",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dam.dlx",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "metadata-queue",
+      "vhost": "dam",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dam.dlx",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "thumbnail-queue",
+      "vhost": "dam",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dam.dlx",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "transcode-queue",
+      "vhost": "dam",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dam.dlx",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "asset-service-events",
+      "vhost": "dam",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "dead-letter-queue",
+      "vhost": "dam",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "dam.uploads",
+      "vhost": "dam",
+      "destination": "asset-processing",
+      "destination_type": "queue",
+      "routing_key": "asset.uploaded",
+      "arguments": {}
+    },
+    {
+      "source": "dam.processing",
+      "vhost": "dam",
+      "destination": "metadata-queue",
+      "destination_type": "queue",
+      "routing_key": "job.metadata",
+      "arguments": {}
+    },
+    {
+      "source": "dam.processing",
+      "vhost": "dam",
+      "destination": "thumbnail-queue",
+      "destination_type": "queue",
+      "routing_key": "job.thumbnail",
+      "arguments": {}
+    },
+    {
+      "source": "dam.processing",
+      "vhost": "dam",
+      "destination": "transcode-queue",
+      "destination_type": "queue",
+      "routing_key": "job.transcode.720p",
+      "arguments": {}
+    },
+    {
+      "source": "dam.processing",
+      "vhost": "dam",
+      "destination": "transcode-queue",
+      "destination_type": "queue",
+      "routing_key": "job.transcode.1080p",
+      "arguments": {}
+    },
+    {
+      "source": "dam.events",
+      "vhost": "dam",
+      "destination": "asset-service-events",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "dam.dlx",
+      "vhost": "dam",
+      "destination": "dead-letter-queue",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    }
+  ]
+}
