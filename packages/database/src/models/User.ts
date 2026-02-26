@@ -1,13 +1,13 @@
 import { DataTypes, Model } from "sequelize";
 
 export class User extends Model {
-  public id!: string;
-  public email!: string;
-  public password_hash!: string;
-  public role!: "user" | "admin";
-  public is_active!: boolean;
-  public readonly created_at!: Date;
-  public readonly updated_at!: Date;
+  declare id: string;
+  declare email: string;
+  declare password_hash: string;
+  declare role: "user" | "admin";
+  declare is_active: boolean;
+  declare readonly created_at: Date;
+  declare readonly updated_at: Date;
 
   static initialize(sequelize: any) {
     this.init(

@@ -1,8 +1,12 @@
 import express from "express";
+import swaggerUi from "swagger-ui-express";
 import { config } from "@repo/config";
+import { logger } from "@repo/logger";
 import { connectRedis } from "./services/redis";
 import { initDb } from "@repo/database";
-import { logger } from "@repo/logger";
+import { swaggerSpec } from "./swagger";
+import authRoutes from "./routes/auth.route";
+import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
 app.use(express.json());
@@ -12,10 +16,15 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Health check route
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.use("/api/auth", authRoutes);
+
 app.get("/health/auth", (_req, res) => {
   res.status(200).send("OK");
 });
+
+app.use(errorHandler);
 
 const startServer = async () => {
   try {
@@ -31,10 +40,13 @@ const startServer = async () => {
     });
 
     app.listen(config.ports.auth, () => {
-      logger.info(`[API] Listening on port ${config.ports.auth}`);
+      logger.info(`[API Gateway] Listening on port ${config.ports.auth}`);
+      logger.info(
+        `[Swagger UI] Available at http://localhost:${config.ports.auth}/api-docs`
+      );
     });
   } catch (error) {
-    logger.error("[API] Failed to start:", { error });
+    logger.error("[API Gateway] Failed to start:", { error });
     process.exit(1);
   }
 };
