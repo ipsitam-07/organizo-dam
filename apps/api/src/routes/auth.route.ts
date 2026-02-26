@@ -55,6 +55,27 @@ router.post("/register", authController.register.bind(authController));
  */
 router.post("/login", authController.login.bind(authController));
 
+/**
+ * @swagger
+ * api/auth/me:
+ *   get:
+ *     summary: Get current authenticated user
+ *     description: Returns the profile of the currently authenticated user based on JWT.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ */
 router.get("/me", requireAuth, authController.getMe.bind(authController));
 
 export default router;

@@ -39,21 +39,21 @@ export default [
   },
 
   {
-  files: ["apps/**/**/*.{ts,js}"],
-  languageOptions: {
-    globals: globals.node,
-  },
+    files: ["apps/**/**/*.{ts,js}"],
+    languageOptions: {
+      globals: globals.node,
+    },
   },
 
   {
-  files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
-  languageOptions: {
-    globals: globals.browser,
+    files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
+    languageOptions: {
+      globals: globals.browser,
+    },
   },
-  },
-    {
-  files: ["packages/**/*.{ts,tsx,js,jsx}"],
-   languageOptions: {
+  {
+    files: ["packages/**/*.{ts,tsx,js,jsx}"],
+    languageOptions: {
       globals: {
         ...globals.browser,
         ...globals.node,

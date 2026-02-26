@@ -146,7 +146,7 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
-      - /app/node_modules 
+      - /app/node_modules
       - /app/apps/api/node_modules
       - /app/packages/config/node_modules
       - /app/packages/database/node_modules
@@ -193,9 +193,9 @@ services:
       retries: 5
       start_period: 15s
 
-#apps/upload - Backend
+  #apps/upload - Backend
   upload:
-    build: 
+    build:
       context: .
       dockerfile: ./apps/upload/Dockerfile.dev
     container_name: dam-upload
@@ -223,7 +223,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
-
 
   # apps/web — Frontend
   web:
