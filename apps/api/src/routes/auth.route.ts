@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authController } from "../controllers/auth.controller";
+import { requireAuth } from "../middleware/auth.middleware";
 
 const router = Router();
 
@@ -53,5 +54,7 @@ router.post("/register", authController.register.bind(authController));
  *         description: Login successful
  */
 router.post("/login", authController.login.bind(authController));
+
+router.get("/me", requireAuth, authController.getMe.bind(authController));
 
 export default router;
