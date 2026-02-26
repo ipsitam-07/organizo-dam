@@ -53,8 +53,11 @@ export default [
   },
     {
   files: ["packages/**/*.{ts,tsx,js,jsx}"],
-  languageOptions: {
-    globals: globals.browser,
-  },
+   languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
   },
 ];
