@@ -39,7 +39,7 @@ export default [
   },
 
   {
-  files: ["apps/api/**/*.{ts,js}"],
+  files: ["apps/**/**/*.{ts,js}"],
   languageOptions: {
     globals: globals.node,
   },

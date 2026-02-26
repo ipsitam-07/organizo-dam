@@ -186,14 +186,44 @@ services:
     ports:
       - "3000:3000"
       - "3001:3001"
-      - "3002:3002"
-      - "3003:3003"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 15s
+
+#apps/upload - Backend
+  upload:
+    build: 
+      context: .
+      dockerfile: ./apps/upload/Dockerfile.dev
+    container_name: dam-upload
+    restart: unless-stopped
+    networks:
+      - dam-network
+    ports:
+      - "3002:3002"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/upload/node_modules
+      - /app/packages/config/node_modules
+      - /app/packages/database/node_modules
+      - /app/packages/logger/node_modules
+
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
 
   # apps/web — Frontend
   web:
