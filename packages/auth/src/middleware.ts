@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "@repo/config";
-import { UnauthorizedError } from "../utils/error";
-import { redisClient } from "../services/redis";
+import { redisClient } from "./redis";
+import { UnauthorizedError } from "./error";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -26,11 +26,12 @@ export const requireAuth = async (
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, config.jwt.secret as string) as {
+    const decoded = jwt.verify(token, config.jwt.secret!) as {
       id: string;
       email: string;
       role: string;
     };
+
     const redisKey = `session:${decoded.id}`;
     const activeToken = await redisClient.get(redisKey);
 
@@ -39,6 +40,7 @@ export const requireAuth = async (
         "Session expired or invalidated. Please log in again."
       );
     }
+
     req.user = decoded;
     next();
   } catch (error) {

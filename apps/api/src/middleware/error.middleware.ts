@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "@repo/logger";
-import { AppError } from "../utils/error";
+import { AppError } from "@repo/auth";
 
 export const errorHandler = (
   err: Error,
