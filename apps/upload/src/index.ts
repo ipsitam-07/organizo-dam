@@ -2,9 +2,18 @@ import express from "express";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
 import { initDb } from "@repo/database";
-import { S3ClientConfig } from "@aws-sdk/client-s3";
 import { Server } from "@tus/server";
 import { S3Store } from "@tus/s3-store";
+import { rabbitMQService } from "./services/rabbitmq.service";
+import {
+  connectRedis,
+  requireAuth,
+  AuthRequest,
+  UnauthorizedError,
+  AppError,
+} from "@repo/auth";
+import { uploadService } from "./services/upload.service";
+import uploadRoutes from "./routes/upload.route";
 
 const app = express();
 
@@ -19,10 +28,8 @@ app.get("/health/upload", (_req, res) => {
   res.status(200).send("OK");
 });
 
-const credential: S3ClientConfig["credentials"] = {
-  accessKeyId: config.minio.accessKey,
-  secretAccessKey: config.minio.secretKey!,
-};
+//Routes
+app.use("/api/upload", uploadRoutes);
 
 const tusServer = new Server({
   path: "/api/upload",
@@ -40,13 +47,59 @@ const tusServer = new Server({
       forcePathStyle: true,
     },
   }),
+  async onUploadCreate(req, res, upload) {
+    const authReq = req as unknown as AuthRequest;
+    if (!authReq.user?.id)
+      throw new UnauthorizedError("Invalid credentials or inactive account");
+
+    await uploadService.initializeSession(
+      upload.id,
+      authReq.user.id,
+      upload.metadata || {},
+      upload.size || 0
+    );
+    logger.info(`[TUS] Upload started: ${upload.id}`);
+    return res;
+  },
+
+  async onUploadFinish(req, res, upload) {
+    const authReq = req as unknown as AuthRequest;
+
+    if (!authReq.user?.id) {
+      throw new UnauthorizedError("Invalid credentials or inactive account");
+    }
+
+    const { session, asset } = await uploadService.finalizeUpload(
+      upload.id,
+      authReq.user.id,
+      upload.metadata || {},
+      upload.size || 0
+    );
+
+    if (session && asset) {
+      await rabbitMQService.publishUploadComplete({
+        assetId: asset.id,
+        uploadSessionId: session.id,
+        userId: authReq.user.id,
+        storageKey: asset.storage_key,
+      });
+    }
+    return res;
+  },
 });
 
-app.all("/api/upload", tusServer.handle.bind(tusServer));
-app.all("/api/upload/*", tusServer.handle.bind(tusServer));
+//TUS Server routes
+app.all("/api/upload", requireAuth, tusServer.handle.bind(tusServer));
+app.all("/api/upload/*", requireAuth, tusServer.handle.bind(tusServer));
+
+app.use((err: any, _req: any, _res: any, _next: any) => {
+  logger.error("[Global Error]", { error: err.message });
+  throw new AppError("Internal Server Error", 500);
+});
 
 const startServer = async () => {
   try {
+    await connectRedis();
     await initDb({
       host: config.db.host,
       port: config.db.port,
@@ -58,8 +111,8 @@ const startServer = async () => {
 
     app.listen(config.ports.upload, () => {
       logger.info(`[Upload Service] Listening on port ${config.ports.upload}`);
-      logger.info(`[TUS Server] Ready to accept chunked uploads`);
     });
+    await rabbitMQService.connect();
   } catch (error) {
     logger.error("[Upload Service] Failed to start:", { error });
     process.exit(1);
