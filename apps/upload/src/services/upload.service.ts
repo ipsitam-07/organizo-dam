@@ -1,4 +1,4 @@
-import { AppError, NotFoundError, UnauthorizedError } from "@repo/auth";
+import { NotFoundError, UnauthorizedError } from "@repo/auth";
 import { uploadRepository } from "../repo/upload.repo";
 import { logger } from "@repo/logger";
 

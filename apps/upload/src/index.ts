@@ -1,4 +1,6 @@
 import express from "express";
+import cors from "cors";
+import helmet from "helmet";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
 import { initDb } from "@repo/database";
@@ -10,6 +12,13 @@ import { uploadService } from "./services/upload.service";
 import uploadRoutes from "./routes/upload.route";
 
 const app = express();
+app.use(helmet());
+app.use(
+  cors({
+    origin: config.frontendUrl,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 //Request logging

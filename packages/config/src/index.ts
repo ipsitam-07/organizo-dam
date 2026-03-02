@@ -6,6 +6,8 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 export const config = {
   env: process.env.NODE_ENV || "development",
 
+  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
+
   // Microservice Ports
   ports: {
     auth: parseInt(process.env.AUTH_SERVICE_PORT || "3001", 10),
