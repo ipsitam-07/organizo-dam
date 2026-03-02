@@ -5,17 +5,12 @@ import { initDb } from "@repo/database";
 import { Server } from "@tus/server";
 import { S3Store } from "@tus/s3-store";
 import { rabbitMQService } from "./services/rabbitmq.service";
-import {
-  connectRedis,
-  requireAuth,
-  AuthRequest,
-  UnauthorizedError,
-  AppError,
-} from "@repo/auth";
+import { connectRedis, requireAuth, AuthRequest } from "@repo/auth";
 import { uploadService } from "./services/upload.service";
 import uploadRoutes from "./routes/upload.route";
 
 const app = express();
+app.use(express.json());
 
 //Request logging
 app.use((req, _res, next) => {
@@ -49,8 +44,7 @@ const tusServer = new Server({
   }),
   async onUploadCreate(req, res, upload) {
     const authReq = req as unknown as AuthRequest;
-    if (!authReq.user?.id)
-      throw new UnauthorizedError("Invalid credentials or inactive account");
+    if (!authReq.user?.id) throw { status_code: 401, body: "Unauthorized" };
 
     await uploadService.initializeSession(
       upload.id,
@@ -65,9 +59,7 @@ const tusServer = new Server({
   async onUploadFinish(req, res, upload) {
     const authReq = req as unknown as AuthRequest;
 
-    if (!authReq.user?.id) {
-      throw new UnauthorizedError("Invalid credentials or inactive account");
-    }
+    if (!authReq.user?.id) throw { status_code: 401, body: "Unauthorized" };
 
     const { session, asset } = await uploadService.finalizeUpload(
       upload.id,
@@ -92,9 +84,12 @@ const tusServer = new Server({
 app.all("/api/upload", requireAuth, tusServer.handle.bind(tusServer));
 app.all("/api/upload/*", requireAuth, tusServer.handle.bind(tusServer));
 
-app.use((err: any, _req: any, _res: any, _next: any) => {
+app.use((err: any, _req: any, res: any, _next: any) => {
   logger.error("[Global Error]", { error: err.message });
-  throw new AppError("Internal Server Error", 500);
+
+  res.status(err.statusCode || 500).json({
+    error: err.message || "Internal Server Error",
+  });
 });
 
 const startServer = async () => {

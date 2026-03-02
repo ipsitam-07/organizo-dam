@@ -32,6 +32,7 @@ export class UploadController {
     }
   }
 
+  //cancel an ongoing upload session
   async cancelSession(req: AuthRequest, res: Response) {
     try {
       const userId = req.user!.id;
