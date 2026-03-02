@@ -1,0 +1,1 @@
+export const DEFAULT_EXPIRY_SECONDS = 900;
