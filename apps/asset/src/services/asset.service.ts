@@ -105,6 +105,13 @@ export class AssetService {
   async getStats() {
     return assetRepository.getStats();
   }
+
+  //Processing status
+  async getStatus(assetId: string, userId: string) {
+    const result = await assetRepository.getProcessingStatus(assetId, userId);
+    if (!result) throw new NotFoundError("Asset not found");
+    return result;
+  }
 }
 
 export const assetService = new AssetService();

@@ -35,4 +35,7 @@ router.delete(
   assetController.removeTag.bind(assetController)
 );
 
+// GET /api/assets/:id/status
+router.get("/:id/status", assetController.status.bind(assetController));
+
 export default Router;

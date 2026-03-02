@@ -85,6 +85,16 @@ export class AssetController {
       next(err);
     }
   }
+
+  //Status
+  async status(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await assetService.getStatus(req.params.id, req.user!.id);
+      res.json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const assetController = new AssetController();
