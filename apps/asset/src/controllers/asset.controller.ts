@@ -46,6 +46,32 @@ export class AssetController {
       next(err);
     }
   }
+
+  async addTag(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const tag = await assetService.addTag(
+        req.params.id,
+        req.user!.id,
+        req.body.name
+      );
+      res.status(201).json({ data: tag });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async removeTag(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      await assetService.removeTag(
+        req.params.id,
+        req.user!.id,
+        req.params.tagId
+      );
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const assetController = new AssetController();

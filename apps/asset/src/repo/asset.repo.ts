@@ -6,6 +6,7 @@ import {
   ProcessingJob,
   Tag,
   AssetDownload,
+  AssetTag,
 } from "@repo/database";
 import { ListAssetsInput } from "../schemas/asset.schema";
 
@@ -101,6 +102,15 @@ export class AssetRepository {
 
   async incrementDownloadCount(assetId: string) {
     return Asset.increment("download_count", { where: { id: assetId } });
+  }
+
+  //Tags
+  async removeTag(assetId: string, tagId: string) {
+    return AssetTag.destroy({ where: { asset_id: assetId, tag_id: tagId } });
+  }
+
+  async findTagById(tagId: string) {
+    return Tag.findByPk(tagId);
   }
 }
 

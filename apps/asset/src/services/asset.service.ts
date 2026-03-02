@@ -4,6 +4,7 @@ import { NotFoundError, ConflictError } from "@repo/auth";
 import { config } from "@repo/config";
 import { deleteObject, getPresignedUrl } from "../services/storage.service";
 import { logger } from "@repo/logger";
+import { attachTag, autoTagAsset } from "./tag.service";
 
 export class AssetService {
   //list of assets
@@ -74,6 +75,30 @@ export class AssetService {
     await assetRepository.incrementDownloadCount(assetId);
 
     return { url, expiresIn: 900 };
+  }
+
+  //Tags
+  async addTag(assetId: string, userId: string, tagName: string) {
+    const asset = await assetRepository.findByIdAndUser(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+    return attachTag(assetId, tagName, "user", userId);
+  }
+
+  async removeTag(assetId: string, userId: string, tagId: string) {
+    const asset = await assetRepository.findByIdAndUser(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const tag = await assetRepository.findTagById(tagId);
+    if (!tag) throw new NotFoundError("Tag not found");
+
+    const deleted = await assetRepository.removeTag(assetId, tagId);
+    if (deleted === 0)
+      throw new NotFoundError("Tag is not attached to this asset");
+  }
+
+  //called by upload service after upload is complete
+  async onAssetCreated(assetId: string, mimeType: string): Promise<void> {
+    await autoTagAsset(assetId, mimeType);
   }
 }
 
