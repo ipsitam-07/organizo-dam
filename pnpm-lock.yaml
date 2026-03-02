@@ -157,6 +157,9 @@ importers:
       '@repo/rabbitmq':
         specifier: workspace:*
         version: link:../../packages/rabbitmq
+      amqplib:
+        specifier: ^0.10.9
+        version: 0.10.9
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -173,6 +176,9 @@ importers:
         specifier: ^3.23.8
         version: 3.25.76
     devDependencies:
+      '@types/amqplib':
+        specifier: ^0.10.8
+        version: 0.10.8
       '@types/bcryptjs':
         specifier: ^3.0.0
         version: 3.0.0
