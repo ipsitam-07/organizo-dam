@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { userRepository } from "../repo/user.repo";
-import { redisClient } from "./redis";
+import { redisClient } from "@repo/auth";
 import { config } from "@repo/config";
-import { ConflictError, UnauthorizedError } from "../utils/error";
+import { ConflictError, UnauthorizedError } from "@repo/auth";
 
 export class AuthService {
   //Register
