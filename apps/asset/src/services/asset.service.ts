@@ -100,6 +100,11 @@ export class AssetService {
   async onAssetCreated(assetId: string, mimeType: string): Promise<void> {
     await autoTagAsset(assetId, mimeType);
   }
+
+  //Stats for dashboard
+  async getStats() {
+    return assetRepository.getStats();
+  }
 }
 
 export const assetService = new AssetService();

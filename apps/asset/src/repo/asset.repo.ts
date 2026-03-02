@@ -112,6 +112,31 @@ export class AssetRepository {
   async findTagById(tagId: string) {
     return Tag.findByPk(tagId);
   }
+
+  //Admin dashboard
+  async getStats() {
+    const [totalAssets, totalDownloads, storageResult, jobStats] =
+      await Promise.all([
+        Asset.count(),
+        AssetDownload.count(),
+        Asset.sum("size_bytes"),
+        ProcessingJob.findAll({
+          attributes: [
+            "status",
+            [Asset.sequelize!.fn("COUNT", Asset.sequelize!.col("id")), "count"],
+          ],
+          group: ["status"],
+          raw: true,
+        }),
+      ]);
+
+    return {
+      totalAssets,
+      totalDownloads,
+      totalStorageBytes: storageResult ?? 0,
+      jobStats,
+    };
+  }
 }
 
 export const assetRepository = new AssetRepository();

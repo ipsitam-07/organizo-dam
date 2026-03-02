@@ -10,6 +10,9 @@ router.use(requireAuth);
 // GET /api/assets — list with filters and pagination
 router.get("/", assetController.listOfAssets.bind(assetController));
 
+// GET /api/assets/stats (admin only access can be added later via requireAdmin)
+router.get("/stats", assetController.getStats.bind(assetController));
+
 // GET /api/assets/:id
 router.get("/:id", assetController.getAssetbyID.bind(assetController));
 

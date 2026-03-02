@@ -3,6 +3,7 @@ import { AuthRequest } from "@repo/auth";
 import { assetService } from "../services/asset.service";
 
 export class AssetController {
+  //Assets
   async listOfAssets(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const result = await assetService.listAssets(
@@ -33,6 +34,7 @@ export class AssetController {
     }
   }
 
+  //download
   async download(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const result = await assetService.getDownloadUrl(
@@ -47,6 +49,7 @@ export class AssetController {
     }
   }
 
+  //tags
   async addTag(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const tag = await assetService.addTag(
@@ -68,6 +71,16 @@ export class AssetController {
         req.params.tagId
       );
       res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  //Stats
+  async getStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const stats = await assetService.getStats();
+      res.json({ data: stats });
     } catch (err) {
       next(err);
     }
