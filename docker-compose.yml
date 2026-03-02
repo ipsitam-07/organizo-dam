@@ -228,7 +228,7 @@ services:
   asset:
     build:
       context: .
-      dockerfile: ./apps/upload/Dockerfile.dev
+      dockerfile: ./apps/asset/Dockerfile.dev
     container_name: dam-asset
     restart: unless-stopped
     networks:
