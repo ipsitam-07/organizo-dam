@@ -32,6 +32,20 @@ export class AssetController {
       next(err);
     }
   }
+
+  async download(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await assetService.getDownloadUrl(
+        req.params.id,
+        req.user!.id,
+        req.query.rendition as string | undefined,
+        { ip: req.ip, userAgent: req.headers["user-agent"] }
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const assetController = new AssetController();

@@ -1,8 +1,8 @@
 import { ListAssetsInput } from "../schemas/asset.schema";
 import { assetRepository } from "../repo/asset.repo";
-import { NotFoundError } from "@repo/auth";
+import { NotFoundError, ConflictError } from "@repo/auth";
 import { config } from "@repo/config";
-import { deleteObject } from "../services/storage.service";
+import { deleteObject, getPresignedUrl } from "../services/storage.service";
 import { logger } from "@repo/logger";
 
 export class AssetService {
@@ -32,6 +32,48 @@ export class AssetService {
     logger.info(
       `[AssetService] Deleted asset "${assetId}" for user "${userId}"`
     );
+  }
+
+  async getDownloadUrl(
+    assetId: string,
+    userId: string,
+    renditionLabel?: string,
+    request?: { ip?: string; userAgent?: string }
+  ) {
+    const asset = await assetRepository.findByIdAndUser(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+    if (asset.status !== "ready")
+      throw new ConflictError("Asset is not ready for download");
+
+    let storageKey = asset.storage_key;
+    let bucket = config.minio.buckets.chunks;
+    let renditionId: string | undefined;
+
+    if (renditionLabel) {
+      const renditions = (asset as any).AssetRenditions ?? [];
+      const rendition = renditions.find(
+        (r: any) => r.label === renditionLabel && r.status === "ready"
+      );
+      if (!rendition)
+        throw new NotFoundError(`Rendition "${renditionLabel}" not found`);
+      storageKey = rendition.storage_key;
+      bucket = config.minio.buckets.renditions;
+      renditionId = rendition.id;
+    }
+
+    const url = await getPresignedUrl(bucket, storageKey);
+
+    // Log the download
+    await assetRepository.logDownload({
+      asset_id: assetId,
+      user_id: userId,
+      rendition_id: renditionId,
+      ip_address: request?.ip,
+      user_agent: request?.userAgent,
+    });
+    await assetRepository.incrementDownloadCount(assetId);
+
+    return { url, expiresIn: 900 };
   }
 }
 

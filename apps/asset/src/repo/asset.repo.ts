@@ -5,6 +5,7 @@ import {
   AssetRendition,
   ProcessingJob,
   Tag,
+  AssetDownload,
 } from "@repo/database";
 import { ListAssetsInput } from "../schemas/asset.schema";
 
@@ -84,6 +85,22 @@ export class AssetRepository {
     });
 
     return { asset, jobs };
+  }
+
+  //Downloading assets
+  async logDownload(data: {
+    asset_id: string;
+    user_id?: string;
+    rendition_id?: string;
+    share_link_id?: string;
+    ip_address?: string;
+    user_agent?: string;
+  }) {
+    return AssetDownload.create(data);
+  }
+
+  async incrementDownloadCount(assetId: string) {
+    return Asset.increment("download_count", { where: { id: assetId } });
   }
 }
 
