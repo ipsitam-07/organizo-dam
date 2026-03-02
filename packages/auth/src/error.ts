@@ -27,3 +27,15 @@ export class ValidationError extends AppError {
     super(message, 400);
   }
 }
+
+export class NotFoundError extends AppError {
+  constructor(message: string = "Not found") {
+    super(message, 404);
+  }
+}
+
+export class ForbiddenError extends AppError {
+  constructor(message: string = "Forbidden") {
+    super(message, 403);
+  }
+}

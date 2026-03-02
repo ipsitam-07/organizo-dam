@@ -1,3 +1,4 @@
+import { AppError, NotFoundError, UnauthorizedError } from "@repo/auth";
 import { uploadRepository } from "../repo/upload.repo";
 import { logger } from "@repo/logger";
 
@@ -52,16 +53,21 @@ export class UploadService {
 
   //get all session of the current user
   async getUserSessions(userId: string) {
+    if (!userId) throw new UnauthorizedError("Unauthorized");
     return await uploadRepository.getUserSessions(userId);
   }
 
   //get seesion by id
   async getSessionById(sessionId: string, userId: string) {
+    if (!userId) throw new UnauthorizedError("Unauthorized");
+    if (!sessionId) throw new NotFoundError("Session not found or expired");
     return await uploadRepository.findSessionByIdAndUser(sessionId, userId);
   }
 
   //cancel a session for an user
   async cancelSession(sessionId: string, userId: string) {
+    if (!userId) throw new UnauthorizedError("Unauthorized");
+    if (!sessionId) throw new NotFoundError("Session not found or expired");
     const session = await uploadRepository.findSessionByIdAndUser(
       sessionId,
       userId
