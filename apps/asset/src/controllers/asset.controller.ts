@@ -95,6 +95,20 @@ export class AssetController {
       next(err);
     }
   }
+
+  //Share link create
+  async createShareLink(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const link = await assetService.createShareLink(
+        req.params.id,
+        req.user!.id,
+        req.body
+      );
+      res.status(201).json({ data: link });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const assetController = new AssetController();

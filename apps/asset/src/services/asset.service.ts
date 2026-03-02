@@ -1,6 +1,8 @@
-import { ListAssetsInput } from "../schemas/asset.schema";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
+import { ListAssetsInput, CreateShareLinkInput } from "../schemas/asset.schema";
 import { assetRepository } from "../repo/asset.repo";
-import { NotFoundError, ConflictError } from "@repo/auth";
+import { NotFoundError, ConflictError, AppError } from "@repo/auth";
 import { config } from "@repo/config";
 import { deleteObject, getPresignedUrl } from "../services/storage.service";
 import { logger } from "@repo/logger";
@@ -111,6 +113,76 @@ export class AssetService {
     const result = await assetRepository.getProcessingStatus(assetId, userId);
     if (!result) throw new NotFoundError("Asset not found");
     return result;
+  }
+
+  //Share links
+  async createShareLink(
+    assetId: string,
+    userId: string,
+    data: CreateShareLinkInput
+  ) {
+    const asset = await assetRepository.findByIdAndUser(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const password_hash = data.password
+      ? await bcrypt.hash(data.password, 10)
+      : undefined;
+
+    const expires_at = data.expires_in_hours
+      ? new Date(Date.now() + data.expires_in_hours * 3600 * 1000)
+      : undefined;
+
+    return assetRepository.createShareLink({
+      asset_id: assetId,
+      created_by: userId,
+      token,
+      password_hash,
+      max_downloads: data.max_downloads,
+      expires_at,
+    });
+  }
+
+  async resolveShareLink(
+    token: string,
+    password?: string,
+    request?: { ip?: string; userAgent?: string }
+  ) {
+    const link = await assetRepository.findShareLinkByToken(token);
+    if (!link) throw new NotFoundError("Share link not found");
+
+    if (link.expires_at && link.expires_at < new Date()) {
+      throw new AppError("Share link has expired", 410);
+    }
+
+    if (link.max_downloads && link.download_count >= link.max_downloads) {
+      throw new AppError("Share link download limit reached", 410);
+    }
+
+    if (link.password_hash) {
+      if (!password) throw new AppError("Password required", 401);
+      const valid = await bcrypt.compare(password, link.password_hash);
+      if (!valid) throw new AppError("Invalid password", 401);
+    }
+
+    const asset = await assetRepository.findById(link.asset_id);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const url = await getPresignedUrl(
+      config.minio.buckets.chunks,
+      asset.storage_key
+    );
+
+    await assetRepository.logDownload({
+      asset_id: asset.id,
+      share_link_id: link.id,
+      ip_address: request?.ip,
+      user_agent: request?.userAgent,
+    });
+    await assetRepository.incrementShareLinkDownloads(link.id);
+    await assetRepository.incrementDownloadCount(asset.id);
+
+    return { url, expiresIn: 900, filename: asset.original_filename };
   }
 }
 

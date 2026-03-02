@@ -19,5 +19,12 @@ export const addTagSchema = z.object({
     .toLowerCase(),
 });
 
+export const createShareLinkSchema = z.object({
+  password: z.string().min(4).max(72).optional(),
+  max_downloads: z.number().int().min(1).max(10000).optional(),
+  expires_in_hours: z.number().int().min(1).max(8760).optional(),
+});
+
 export type ListAssetsInput = z.infer<typeof listAssetsSchema>;
 export type AddTagInput = z.infer<typeof addTagSchema>;
+export type CreateShareLinkInput = z.infer<typeof createShareLinkSchema>;

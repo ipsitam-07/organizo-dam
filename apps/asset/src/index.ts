@@ -7,6 +7,7 @@ import { errorHandler } from "./middleware/error.middleware";
 import { connectRedis } from "@repo/auth";
 import { initDb } from "@repo/database";
 import assetRoutes from "./routes/asset.route";
+import shareRoutes from "./routes/share.route";
 
 export const app = express();
 app.use(helmet());
@@ -31,6 +32,7 @@ app.get("/health/asset", (_req, res) => {
 
 //Routes
 app.use("/api/assets", assetRoutes);
+app.use("api/share", shareRoutes);
 
 app.use(errorHandler);
 

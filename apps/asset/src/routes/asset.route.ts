@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "@repo/auth";
 import { assetController } from "../controllers/asset.controller";
 import { validate } from "../middleware/validation.middleware";
-import { addTagSchema } from "../schemas/asset.schema";
+import { addTagSchema, createShareLinkSchema } from "../schemas/asset.schema";
 
 const router = Router();
 router.use(requireAuth);
@@ -37,5 +37,12 @@ router.delete(
 
 // GET /api/assets/:id/status
 router.get("/:id/status", assetController.status.bind(assetController));
+
+// POST /api/assets/:id/share
+router.post(
+  "/:id/share",
+  validate(createShareLinkSchema),
+  assetController.createShareLink.bind(assetController)
+);
 
 export default Router;

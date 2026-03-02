@@ -7,6 +7,7 @@ import {
   Tag,
   AssetDownload,
   AssetTag,
+  ShareLink,
 } from "@repo/database";
 import { ListAssetsInput } from "../schemas/asset.schema";
 
@@ -136,6 +137,28 @@ export class AssetRepository {
       totalStorageBytes: storageResult ?? 0,
       jobStats,
     };
+  }
+
+  //Share links
+  async createShareLink(data: {
+    asset_id: string;
+    created_by: string;
+    token: string;
+    password_hash?: string;
+    max_downloads?: number;
+    expires_at?: Date;
+  }) {
+    return ShareLink.create(data);
+  }
+
+  async findShareLinkByToken(token: string) {
+    return ShareLink.findOne({ where: { token } });
+  }
+
+  async incrementShareLinkDownloads(shareLinkId: string) {
+    return ShareLink.increment("download_count", {
+      where: { id: shareLinkId },
+    });
   }
 }
 
