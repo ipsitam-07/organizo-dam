@@ -224,6 +224,37 @@ services:
       retries: 5
       start_period: 15s
 
+  #apps/asset - Backend
+  asset:
+    build:
+      context: .
+      dockerfile: ./apps/asset/Dockerfile.dev
+    container_name: dam-asset
+    restart: unless-stopped
+    networks:
+      - dam-network
+    ports:
+      - "3003:3003"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/asset/node_modules
+      - /app/packages/config/node_modules
+      - /app/packages/database/node_modules
+      - /app/packages/logger/node_modules
+
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   # apps/web — Frontend
   web:
     build:
