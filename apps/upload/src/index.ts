@@ -10,8 +10,9 @@ import { rabbitMQService } from "./services/rabbitmq.service";
 import { connectRedis, requireAuth, AuthRequest } from "@repo/auth";
 import { uploadService } from "./services/upload.service";
 import uploadRoutes from "./routes/upload.route";
+import { errorHandler } from "./middleware/error.middleware";
 
-const app = express();
+export const app = express();
 app.use(helmet());
 app.use(
   cors({
@@ -35,63 +36,69 @@ app.get("/health/upload", (_req, res) => {
 //Routes
 app.use("/api/upload", uploadRoutes);
 
-const tusServer = new Server({
-  path: "/api/upload",
-  datastore: new S3Store({
-    partSize: 5 * 1024 * 1024,
+app.use(errorHandler);
 
-    s3ClientConfig: {
-      endpoint: `http://${config.minio.endpoint}`,
-      region: "us-east-1",
-      credentials: {
-        accessKeyId: config.minio.accessKey,
-        secretAccessKey: config.minio.secretKey!,
+export function createTusServer() {
+  const tusServer = new Server({
+    path: "/api/upload",
+    datastore: new S3Store({
+      partSize: 5 * 1024 * 1024,
+
+      s3ClientConfig: {
+        endpoint: `http://${config.minio.endpoint}`,
+        region: "us-east-1",
+        credentials: {
+          accessKeyId: config.minio.accessKey,
+          secretAccessKey: config.minio.secretKey!,
+        },
+        bucket: config.minio.buckets.chunks,
+        forcePathStyle: true,
       },
-      bucket: config.minio.buckets.chunks,
-      forcePathStyle: true,
+    }),
+    async onUploadCreate(req, res, upload) {
+      const authReq = req as unknown as AuthRequest;
+      if (!authReq.user?.id) throw { status_code: 401, body: "Unauthorized" };
+
+      await uploadService.initializeSession(
+        upload.id,
+        authReq.user.id,
+        upload.metadata || {},
+        upload.size || 0
+      );
+      logger.info(`[TUS] Upload started: ${upload.id}`);
+      return res;
     },
-  }),
-  async onUploadCreate(req, res, upload) {
-    const authReq = req as unknown as AuthRequest;
-    if (!authReq.user?.id) throw { status_code: 401, body: "Unauthorized" };
 
-    await uploadService.initializeSession(
-      upload.id,
-      authReq.user.id,
-      upload.metadata || {},
-      upload.size || 0
-    );
-    logger.info(`[TUS] Upload started: ${upload.id}`);
-    return res;
-  },
+    async onUploadFinish(req, res, upload) {
+      const authReq = req as unknown as AuthRequest;
 
-  async onUploadFinish(req, res, upload) {
-    const authReq = req as unknown as AuthRequest;
+      if (!authReq.user?.id) throw { status_code: 401, body: "Unauthorized" };
 
-    if (!authReq.user?.id) throw { status_code: 401, body: "Unauthorized" };
+      const { session, asset } = await uploadService.finalizeUpload(
+        upload.id,
+        authReq.user.id,
+        upload.metadata || {},
+        upload.size || 0
+      );
 
-    const { session, asset } = await uploadService.finalizeUpload(
-      upload.id,
-      authReq.user.id,
-      upload.metadata || {},
-      upload.size || 0
-    );
+      if (session && asset) {
+        await rabbitMQService.publishUploadComplete({
+          assetId: asset.id,
+          uploadSessionId: session.id,
+          userId: authReq.user.id,
+          storageKey: asset.storage_key,
+        });
+      }
+      return res;
+    },
+  });
 
-    if (session && asset) {
-      await rabbitMQService.publishUploadComplete({
-        assetId: asset.id,
-        uploadSessionId: session.id,
-        userId: authReq.user.id,
-        storageKey: asset.storage_key,
-      });
-    }
-    return res;
-  },
-});
+  //TUS Server routes
+  app.all("/api/upload", requireAuth, tusServer.handle.bind(tusServer));
+  app.all("/api/upload/*", requireAuth, tusServer.handle.bind(tusServer));
 
-//TUS Server routes
-app.all("/api/upload", requireAuth, tusServer.handle.bind(tusServer));
-app.all("/api/upload/*", requireAuth, tusServer.handle.bind(tusServer));
+  return tusServer;
+}
 
 app.use((err: any, _req: any, res: any, _next: any) => {
   logger.error("[Global Error]", { error: err.message });
