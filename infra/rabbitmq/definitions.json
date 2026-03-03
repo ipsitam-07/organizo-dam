@@ -26,14 +26,6 @@
       "arguments": {}
     },
     {
-      "name": "dam.processing",
-      "vhost": "dam",
-      "type": "topic",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
       "name": "dam.events",
       "vhost": "dam",
       "type": "fanout",
@@ -42,7 +34,7 @@
       "arguments": {}
     },
     {
-      "name": "dam.dlx",
+      "name": "dam.dead-letter",
       "vhost": "dam",
       "type": "direct",
       "durable": true,
@@ -57,37 +49,41 @@
       "durable": true,
       "auto_delete": false,
       "arguments": {
-        "x-dead-letter-exchange": "dam.dlx",
+        "x-dead-letter-exchange": "dam.dead-letter",
+        "x-dead-letter-routing-key": "job.dead_lettered",
         "x-message-ttl": 86400000
       }
     },
     {
-      "name": "metadata-queue",
+      "name": "metadata-processing",
       "vhost": "dam",
       "durable": true,
       "auto_delete": false,
       "arguments": {
-        "x-dead-letter-exchange": "dam.dlx",
+        "x-dead-letter-exchange": "dam.dead-letter",
+        "x-dead-letter-routing-key": "job.dead_lettered",
         "x-message-ttl": 86400000
       }
     },
     {
-      "name": "thumbnail-queue",
+      "name": "thumbnail-processing",
       "vhost": "dam",
       "durable": true,
       "auto_delete": false,
       "arguments": {
-        "x-dead-letter-exchange": "dam.dlx",
+        "x-dead-letter-exchange": "dam.dead-letter",
+        "x-dead-letter-routing-key": "job.dead_lettered",
         "x-message-ttl": 86400000
       }
     },
     {
-      "name": "transcode-queue",
+      "name": "transcode-processing",
       "vhost": "dam",
       "durable": true,
       "auto_delete": false,
       "arguments": {
-        "x-dead-letter-exchange": "dam.dlx",
+        "x-dead-letter-exchange": "dam.dead-letter",
+        "x-dead-letter-routing-key": "job.dead_lettered",
         "x-message-ttl": 86400000
       }
     },
@@ -116,35 +112,27 @@
       "arguments": {}
     },
     {
-      "source": "dam.processing",
+      "source": "dam.uploads",
       "vhost": "dam",
-      "destination": "metadata-queue",
+      "destination": "metadata-processing",
       "destination_type": "queue",
-      "routing_key": "job.metadata",
+      "routing_key": "asset.process.metadata",
       "arguments": {}
     },
     {
-      "source": "dam.processing",
+      "source": "dam.uploads",
       "vhost": "dam",
-      "destination": "thumbnail-queue",
+      "destination": "thumbnail-processing",
       "destination_type": "queue",
-      "routing_key": "job.thumbnail",
+      "routing_key": "asset.process.thumbnail",
       "arguments": {}
     },
     {
-      "source": "dam.processing",
+      "source": "dam.uploads",
       "vhost": "dam",
-      "destination": "transcode-queue",
+      "destination": "transcode-processing",
       "destination_type": "queue",
-      "routing_key": "job.transcode.720p",
-      "arguments": {}
-    },
-    {
-      "source": "dam.processing",
-      "vhost": "dam",
-      "destination": "transcode-queue",
-      "destination_type": "queue",
-      "routing_key": "job.transcode.1080p",
+      "routing_key": "asset.process.transcode",
       "arguments": {}
     },
     {
@@ -156,7 +144,7 @@
       "arguments": {}
     },
     {
-      "source": "dam.dlx",
+      "source": "dam.dead-letter",
       "vhost": "dam",
       "destination": "dead-letter-queue",
       "destination_type": "queue",
