@@ -45,4 +45,4 @@ router.post(
   assetController.createShareLink.bind(assetController)
 );
 
-export default Router;
+export default router;

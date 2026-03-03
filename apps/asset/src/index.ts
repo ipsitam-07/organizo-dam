@@ -35,7 +35,7 @@ app.get("/health/asset", (_req, res) => {
 
 //Routes
 app.use("/api/assets", assetRoutes);
-app.use("api/share", shareRoutes);
+app.use("/api/share", shareRoutes);
 
 app.use(errorHandler);
 
@@ -72,4 +72,6 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}
