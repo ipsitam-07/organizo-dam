@@ -282,6 +282,44 @@ services:
       retries: 3
       start_period: 10s
 
+  #Workers
+  workers:
+    build:
+      context: .
+      dockerfile: apps/workers/Dockerfile.dev
+    container_name: dam-workers
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/workers/node_modules
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      POSTGRES_HOST:     ${POSTGRES_HOST}
+      POSTGRES_PORT:     ${POSTGRES_PORT}
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      RABBITMQ_HOST:     ${RABBITMQ_HOST}
+      RABBITMQ_PORT:     ${RABBITMQ_PORT}
+      RABBITMQ_USER:     ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST:    ${RABBITMQ_VHOST}
+      MINIO_ENDPOINT:    ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY:  ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY:  ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_ASSETS:      ${MINIO_BUCKET_ASSETS}
+      MINIO_BUCKET_CHUNKS:      ${MINIO_BUCKET_CHUNKS}
+      MINIO_BUCKET_RENDITIONS:  ${MINIO_BUCKET_RENDITIONS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+
   # NGINX
   nginx:
     image: nginx:alpine
@@ -291,6 +329,8 @@ services:
       - dam-network
     depends_on:
       - api
+      - upload
+      - asset
       - web
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
