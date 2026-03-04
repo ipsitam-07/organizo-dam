@@ -20,7 +20,6 @@ export class User extends Model {
         email: {
           type: DataTypes.STRING,
           allowNull: false,
-          unique: true,
           validate: { isEmail: true },
         },
         password_hash: {
@@ -44,6 +43,9 @@ export class User extends Model {
         timestamps: true,
         createdAt: "created_at",
         updatedAt: "updated_at",
+        indexes: [
+          { unique: true, fields: ["email"], name: "users_email_unique" },
+        ],
       }
     );
   }

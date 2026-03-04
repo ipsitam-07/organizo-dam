@@ -29,7 +29,6 @@ export class ShareLink extends Model {
         },
         token: {
           type: DataTypes.STRING,
-          unique: true,
           allowNull: false,
         },
         password_hash: {
@@ -59,6 +58,9 @@ export class ShareLink extends Model {
         sequelize,
         tableName: "share_links",
         timestamps: false,
+        indexes: [
+          { unique: true, fields: ["token"], name: "share_links_token_unique" },
+        ],
       }
     );
   }

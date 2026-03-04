@@ -35,7 +35,6 @@ export class Asset extends Model {
         },
         storage_key: {
           type: DataTypes.STRING,
-          unique: true,
           allowNull: false,
         },
         mime_type: {
@@ -63,6 +62,13 @@ export class Asset extends Model {
         timestamps: true,
         createdAt: "created_at",
         updatedAt: "updated_at",
+        indexes: [
+          {
+            unique: true,
+            fields: ["storage_key"],
+            name: "assets_storage_key_unique",
+          },
+        ],
       }
     );
   }

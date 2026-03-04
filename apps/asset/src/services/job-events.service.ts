@@ -8,10 +8,11 @@ export async function handleJobEvent(
   payload: JobCompletedPayload,
   _msg: ConsumeMessage
 ): Promise<void> {
-  const { assetId, jobId, status, errorMessage } = payload;
+  const { assetId, jobId, status, errorMessage, renditionId } = payload;
 
   logger.info(
-    `[JobEvent] Received status="${status}" for job="${jobId}" asset="${assetId}"`
+    `[JobEvent] Received status="${status}" for job="${jobId}" asset="${assetId}"` +
+      (renditionId ? ` rendition="${renditionId}"` : "")
   );
 
   await ProcessingJob.update(
@@ -19,6 +20,7 @@ export async function handleJobEvent(
       status,
       error_message: errorMessage ?? null,
       completed_at: new Date(),
+      ...(renditionId ? { rendition_id: renditionId } : {}),
     },
     { where: { id: jobId } }
   );
@@ -34,7 +36,7 @@ export async function handleJobEvent(
   const pendingCount = await ProcessingJob.count({
     where: {
       asset_id: assetId,
-      status: { [Op.notIn]: ["completed", "dead_lettered"] },
+      status: { [Op.notIn]: ["completed", "failed", "dead_lettered"] },
     },
   });
 

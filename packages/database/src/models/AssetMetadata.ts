@@ -25,7 +25,6 @@ export class AssetMetadata extends Model {
         },
         asset_id: {
           type: DataTypes.UUID,
-          unique: true,
           allowNull: false,
         },
         width: {
@@ -78,6 +77,13 @@ export class AssetMetadata extends Model {
         sequelize,
         tableName: "asset_metadata",
         timestamps: false,
+        indexes: [
+          {
+            unique: true,
+            fields: ["asset_id"],
+            name: "asset_metadata_asset_id_unique",
+          },
+        ],
       }
     );
   }
