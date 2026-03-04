@@ -1,10 +1,15 @@
 import { logger } from "@repo/logger";
 import { AssemblyWorker } from "./workers/assembly.worker";
 import { MetadataWorker } from "./workers/metadata.worker";
+import { ThumbnailWorker } from "./workers/thumbnail.worker";
 
 async function main() {
   logger.info("[Workers] Starting DAM Platform worker pipeline...");
-  const workers = [new AssemblyWorker(), new MetadataWorker()];
+  const workers = [
+    new AssemblyWorker(),
+    new MetadataWorker(),
+    new ThumbnailWorker(),
+  ];
 
   await Promise.all(workers.map((w) => w.start()));
   logger.info("[Worker] Workers running fine");

@@ -1,6 +1,8 @@
 import ffmpeg from "fluent-ffmpeg";
 import { VideoMetadata } from "../interfaces/interfaces";
-
+import * as path from "path";
+import * as os from "os";
+import { logger } from "@repo/logger";
 // Probe
 export function probeFile(filePath: string): Promise<VideoMetadata> {
   return new Promise((resolve, reject) => {
@@ -33,5 +35,31 @@ export function probeFile(filePath: string): Promise<VideoMetadata> {
         raw_metadata: data,
       });
     });
+  });
+}
+
+//Thumbnail
+export function extractThumbnail(
+  inputPath: string,
+  durationSecs: number
+): Promise<string> {
+  const seekTime = Math.max(1, Math.floor(durationSecs * 0.1));
+  const outputPath = path.join(os.tmpdir(), `dam-thumb-${Date.now()}.jpg`);
+
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .seekInput(seekTime)
+      .frames(1)
+      .output(outputPath)
+      .outputOptions(["-vf scale=640:-1", "-q:v 3"])
+      .on("end", () => {
+        logger.info(`[FFmpeg] Thumbnail → ${outputPath}`);
+        resolve(outputPath);
+      })
+      .on("error", (err) => {
+        logger.error("[FFmpeg] Thumbnail failed", { error: err.message });
+        reject(err);
+      })
+      .run();
   });
 }
