@@ -1,5 +1,5 @@
 import ffmpeg from "fluent-ffmpeg";
-import { VideoMetadata } from "../interfaces/interfaces";
+import { VideoMetadata, TranscodeProfile } from "../interfaces/interfaces";
 import * as path from "path";
 import * as os from "os";
 import { logger } from "@repo/logger";
@@ -58,6 +58,47 @@ export function extractThumbnail(
       })
       .on("error", (err) => {
         logger.error("[FFmpeg] Thumbnail failed", { error: err.message });
+        reject(err);
+      })
+      .run();
+  });
+}
+
+//Transcode
+export function transcodeVideo(
+  inputPath: string,
+  profile: TranscodeProfile,
+  onProgress?: (pct: number) => void
+): Promise<string> {
+  const outputPath = path.join(
+    os.tmpdir(),
+    `dam-transcode-${profile.label}-${Date.now()}.mp4`
+  );
+
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .output(outputPath)
+      .videoCodec("libx264")
+      .audioCodec("aac")
+      .outputOptions([
+        `-vf scale=-2:${profile.height}`,
+        `-b:v ${profile.videoBitrate}`,
+        `-b:a ${profile.audioBitrate}`,
+        "-preset fast",
+        "-movflags faststart",
+        "-pix_fmt yuv420p",
+      ])
+      .on("progress", (p) => {
+        if (onProgress && p.percent) onProgress(Math.round(p.percent));
+      })
+      .on("end", () => {
+        logger.info(`[FFmpeg] Transcode done → ${profile.label}`);
+        resolve(outputPath);
+      })
+      .on("error", (err) => {
+        logger.error(`[FFmpeg] Transcode failed ${profile.label}`, {
+          error: err.message,
+        });
         reject(err);
       })
       .run();
