@@ -78,4 +78,6 @@ router.post("/login", authController.login.bind(authController));
  */
 router.get("/me", requireAuth, authController.getMe.bind(authController));
 
+router.post("/logout", requireAuth, authController.logout.bind(authController));
+
 export default router;
