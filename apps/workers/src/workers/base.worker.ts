@@ -1,10 +1,11 @@
 import { ConsumeMessage } from "amqplib";
-import { RabbitMQClient } from "@repo/rabbitmq";
-import { EXCHANGES, ROUTING_KEYS } from "@repo/rabbitmq/src/utils/constants";
 import {
+  RabbitMQClient,
+  EXCHANGES,
+  ROUTING_KEYS,
   JobCompletedPayload,
   UploadCompletePayload,
-} from "@repo/rabbitmq/src/utils/interfaces";
+} from "@repo/rabbitmq";
 import { Asset, ProcessingJob, initDb } from "@repo/database";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";

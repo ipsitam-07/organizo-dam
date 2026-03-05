@@ -1,7 +1,7 @@
 import type { ConsumeMessage } from "amqplib";
 import { Asset, ProcessingJob } from "@repo/database";
 import { logger } from "@repo/logger";
-import type { JobCompletedPayload } from "@repo/rabbitmq/src/utils/interfaces";
+import type { JobCompletedPayload } from "@repo/rabbitmq";
 import { Op } from "sequelize";
 
 export async function handleJobEvent(

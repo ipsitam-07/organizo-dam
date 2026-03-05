@@ -37,7 +37,7 @@ export class UploadController {
       const session = await uploadService.cancelSession(sessionId, userId);
 
       res
-        .status(204)
+        .status(200)
         .json({ message: "Upload cancelled successfully", data: session });
     } catch (error: any) {
       next(error);

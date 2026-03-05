@@ -4,7 +4,7 @@ import {
   AssetRendition,
   ProcessingJob,
 } from "@repo/database";
-import { UploadCompletePayload } from "@repo/rabbitmq/src/utils/interfaces";
+import { UploadCompletePayload } from "@repo/rabbitmq";
 import { logger } from "@repo/logger";
 import { BaseWorker } from "./base.worker";
 import {
