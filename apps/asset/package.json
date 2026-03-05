@@ -19,6 +19,7 @@
     "@repo/database": "workspace:*",
     "@repo/logger": "workspace:*",
     "@repo/rabbitmq": "workspace:*",
+    "@repo/rate-limit": "workspace:*",
     "amqplib": "^0.10.9",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",

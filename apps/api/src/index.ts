@@ -9,11 +9,17 @@ import { errorHandler } from "./middleware/error.middleware";
 import yaml from "js-yaml";
 import fs from "fs";
 import path from "path";
+import helmet from "helmet";
+import { authLimiter } from "@repo/rate-limit";
 
 export const app = express();
 
+app.use(helmet());
+
 const swaggerPath = path.join(__dirname, "../../swagger.yml");
 app.use(express.json());
+
+app.set("trust proxy", 1);
 
 //Request logging
 app.use((req, _res, next) => {
@@ -32,7 +38,8 @@ if (swaggerDoc) {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 }
 
-app.use("/api/auth", authRoutes);
+//Routes
+app.use("/api/auth", authLimiter, authRoutes);
 
 //Health check route
 app.get("/health/auth", (_req, res) => {
