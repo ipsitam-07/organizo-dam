@@ -16,7 +16,6 @@ export class Tag extends Model {
         },
         name: {
           type: DataTypes.STRING,
-          unique: true,
           allowNull: false,
         },
         source: {
@@ -34,6 +33,7 @@ export class Tag extends Model {
         sequelize,
         tableName: "tags",
         timestamps: false,
+        indexes: [{ unique: true, fields: ["name"], name: "tags_name_unique" }],
       }
     );
   }

@@ -35,7 +35,6 @@ export class AssetRendition extends Model {
         },
         storage_key: {
           type: DataTypes.STRING,
-          unique: true,
           allowNull: false,
         },
         mime_type: {
@@ -74,6 +73,11 @@ export class AssetRendition extends Model {
             unique: true,
             fields: ["asset_id", "rendition_type", "label"],
             name: "uq_asset_rendition",
+          },
+          {
+            unique: true,
+            fields: ["storage_key"],
+            name: "asset_renditions_storage_key_unique",
           },
         ],
       }

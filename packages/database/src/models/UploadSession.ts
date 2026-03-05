@@ -35,7 +35,6 @@ export class UploadSession extends Model {
         },
         tus_upload_id: {
           type: DataTypes.STRING,
-          unique: true,
           allowNull: false,
         },
         upload_url: {
@@ -61,7 +60,6 @@ export class UploadSession extends Model {
         },
         storage_key: {
           type: DataTypes.STRING,
-          unique: true,
           allowNull: true,
         },
         status: {
@@ -86,6 +84,18 @@ export class UploadSession extends Model {
         sequelize,
         tableName: "upload_sessions",
         timestamps: true,
+        indexes: [
+          {
+            unique: true,
+            fields: ["tus_upload_id"],
+            name: "upload_sessions_tus_id_unique",
+          },
+          {
+            unique: true,
+            fields: ["storage_key"],
+            name: "upload_sessions_storage_key_unique",
+          },
+        ],
       }
     );
   }

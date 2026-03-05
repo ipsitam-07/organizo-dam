@@ -1,0 +1,17 @@
+FROM node:20-alpine
+
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY apps/workers/package.json ./apps/workers/package.json
+COPY packages/ ./packages/
+
+RUN pnpm install --filter workers --filter "@repo/*"
+
+COPY apps/workers ./apps/workers
+
+CMD ["pnpm", "--filter", "workers", "run", "dev"]

@@ -70,7 +70,7 @@ export const initDb = async (config: DatabaseConfig) => {
     logger.info("[Database] Connection established successfully.");
 
     if (process.env.NODE_ENV !== "production") {
-      await sequelize.sync({ alter: true });
+      await sequelize.sync({ alter: { drop: false } });
       logger.info("[Database] Schema synchronized.");
     }
   } catch (error) {

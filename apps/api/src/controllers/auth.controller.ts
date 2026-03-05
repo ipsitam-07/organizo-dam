@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { authService } from "../services/auth.service";
 import { AuthRequest } from "@repo/auth";
+import { RegisterInput, LoginInput } from "../schemas/auth.schema";
 
 export class AuthController {
   async register(
-    req: Request,
+    req: Request<{}, {}, RegisterInput>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -16,10 +17,27 @@ export class AuthController {
     }
   }
 
-  async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async login(
+    req: Request<{}, {}, LoginInput>,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const result = await authService.login(req.body);
       res.status(200).json({ message: "Login successful", ...result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async logout(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      await authService.logout(req.user!.id);
+      res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
       next(error);
     }

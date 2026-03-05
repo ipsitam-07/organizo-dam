@@ -8,7 +8,7 @@ import { swaggerSpec } from "./swagger";
 import authRoutes from "./routes/auth.route";
 import { errorHandler } from "./middleware/error.middleware";
 
-const app = express();
+export const app = express();
 app.use(express.json());
 
 //Request logging
