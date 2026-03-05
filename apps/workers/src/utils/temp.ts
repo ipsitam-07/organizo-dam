@@ -96,3 +96,8 @@ export function isImageType(mimeType: string): boolean {
     "image/avif",
   ].includes(mimeType);
 }
+
+//Return true if document type
+export function isDocumentType(mimeType: string): boolean {
+  return mimeType === "application/pdf";
+}

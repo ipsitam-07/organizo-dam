@@ -12,6 +12,7 @@ import {
   mimeToExtension,
   isProbeableMedia,
   isImageType,
+  isDocumentType,
 } from "../utils/temp";
 
 export class MetadataWorker extends BaseWorker {
@@ -90,6 +91,17 @@ export class MetadataWorker extends BaseWorker {
       logger.info(
         `[MetadataWorker] Image: ${meta.width}x${meta.height} ${meta.format} for asset="${assetId}"`
       );
+      return;
+    }
+
+    //PDF
+    if (isDocumentType(asset.mime_type)) {
+      await AssetMetadata.upsert({
+        asset_id: assetId,
+        format: "pdf",
+        extracted_at: new Date(),
+      });
+      logger.info(`[MetadataWorker] PDF`);
       return;
     }
 

@@ -7,6 +7,7 @@ export const WORKER_QUEUES = {
   THUMBNAIL: "thumbnail-processing",
   TRANSCODE: "transcode-processing",
   IMAGE: "image-processing",
+  DOCUMENT: "document-processing",
 } as const;
 
 export const WORKER_ROUTING_KEYS = {
@@ -15,6 +16,7 @@ export const WORKER_ROUTING_KEYS = {
   PROCESS_THUMBNAIL: "asset.process.thumbnail",
   PROCESS_TRANSCODE: "asset.process.transcode",
   PROCESS_IMAGE: "asset.process.image",
+  PROCESS_DOCUMENT: "asset.process.document",
 } as const;
 
 export const TRANSCODE_PROFILES: TranscodeProfile[] = [

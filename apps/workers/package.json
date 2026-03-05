@@ -19,14 +19,12 @@
     "@repo/rabbitmq": "workspace:*",
     "amqplib": "^0.10.9",
     "fluent-ffmpeg": "^2.1.3",
-    "pdf-parse": "^2.4.5",
     "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.8",
     "@types/fluent-ffmpeg": "^2.1.27",
     "@types/node": "^20.11.24",
-    "@types/pdf-parse": "^1.1.4",
     "@vitest/coverage-v8": "^2.0.0",
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",

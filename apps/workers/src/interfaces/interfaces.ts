@@ -34,3 +34,9 @@ export interface ImageRenditionSpec {
   ext: string;
   quality: number;
 }
+
+export interface DocumentMetadata {
+  page_count: number;
+  format: string;
+  raw_metadata: object;
+}
