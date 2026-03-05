@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { authController } from "../controllers/auth.controller";
 import { requireAuth } from "@repo/auth";
-
+import { validate } from "../middleware/validation.middleware";
+import { registerSchema, loginSchema } from "../schemas/auth.schema";
 const router = Router();
 
 /**
@@ -28,7 +29,11 @@ const router = Router();
  *       201:
  *         description: User registered successfully
  */
-router.post("/register", authController.register.bind(authController));
+router.post(
+  "/register",
+  validate(registerSchema),
+  authController.register.bind(authController)
+);
 /**
  * @swagger
  * /api/auth/login:
@@ -53,7 +58,11 @@ router.post("/register", authController.register.bind(authController));
  *       200:
  *         description: Login successful
  */
-router.post("/login", authController.login.bind(authController));
+router.post(
+  "/login",
+  validate(loginSchema),
+  authController.login.bind(authController)
+);
 
 /**
  * @swagger
