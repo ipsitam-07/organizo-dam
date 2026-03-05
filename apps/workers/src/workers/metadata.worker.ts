@@ -1,5 +1,5 @@
 import { Asset, AssetMetadata, ProcessingJob } from "@repo/database";
-import { UploadCompletePayload } from "@repo/rabbitmq/src/utils/interfaces";
+import { UploadCompletePayload } from "@repo/rabbitmq";
 import { logger } from "@repo/logger";
 import { BaseWorker } from "./base.worker";
 import { WORKER_QUEUES, WORKER_ROUTING_KEYS } from "../utils/constants";

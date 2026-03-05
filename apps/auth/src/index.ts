@@ -4,12 +4,22 @@ import { config } from "@repo/config";
 import { logger } from "@repo/logger";
 import { connectRedis } from "@repo/auth";
 import { initDb } from "@repo/database";
-import { swaggerSpec } from "./swagger";
 import authRoutes from "./routes/auth.route";
 import { errorHandler } from "./middleware/error.middleware";
+import yaml from "js-yaml";
+import fs from "fs";
+import path from "path";
+import helmet from "helmet";
+import { authLimiter } from "@repo/rate-limit";
 
 export const app = express();
+
+app.use(helmet());
+
+const swaggerPath = path.join(__dirname, "../../swagger.yml");
 app.use(express.json());
+
+app.set("trust proxy", 1);
 
 //Request logging
 app.use((req, _res, next) => {
@@ -17,9 +27,19 @@ app.use((req, _res, next) => {
   next();
 });
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+let swaggerDoc;
+try {
+  swaggerDoc = yaml.load(fs.readFileSync(swaggerPath, "utf8"));
+} catch (err) {
+  logger.error("Failed to load swagger.", err);
+}
 
-app.use("/api/auth", authRoutes);
+if (swaggerDoc) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+}
+
+//Routes
+app.use("/api/auth", authLimiter, authRoutes);
 
 //Health check route
 app.get("/health/auth", (_req, res) => {

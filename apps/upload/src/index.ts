@@ -11,6 +11,7 @@ import { connectRedis, requireAuth, AuthRequest } from "@repo/auth";
 import { uploadService } from "./services/upload.service";
 import uploadRoutes from "./routes/upload.route";
 import { errorHandler } from "./middleware/error.middleware";
+import { uploadLimiter } from "@repo/rate-limit";
 
 export const app = express();
 app.use(helmet());
@@ -34,13 +35,11 @@ app.get("/health/upload", (_req, res) => {
 });
 
 //Routes
-app.use("/api/upload", uploadRoutes);
-
-app.use(errorHandler);
+app.use("/api/upload", uploadLimiter, uploadRoutes);
 
 export function createTusServer() {
   const tusServer = new Server({
-    path: "/api/upload",
+    path: "/api/upload/core",
     datastore: new S3Store({
       partSize: 5 * 1024 * 1024,
 
@@ -94,19 +93,13 @@ export function createTusServer() {
   });
 
   //TUS Server routes
-  app.all("/api/upload", requireAuth, tusServer.handle.bind(tusServer));
-  app.all("/api/upload/*", requireAuth, tusServer.handle.bind(tusServer));
+  app.all("/api/upload/core", requireAuth, tusServer.handle.bind(tusServer));
+  app.all("/api/upload/core/*", requireAuth, tusServer.handle.bind(tusServer));
 
   return tusServer;
 }
 
-app.use((err: any, _req: any, res: any, _next: any) => {
-  logger.error("[Global Error]", { error: err.message });
-
-  res.status(err.statusCode || 500).json({
-    error: err.message || "Internal Server Error",
-  });
-});
+app.use(errorHandler);
 
 const startServer = async () => {
   try {
@@ -119,6 +112,8 @@ const startServer = async () => {
       password: config.db.password,
       logging: config.env === "development",
     });
+
+    createTusServer();
 
     app.listen(config.ports.upload, () => {
       logger.info(`[Upload Service] Listening on port ${config.ports.upload}`);

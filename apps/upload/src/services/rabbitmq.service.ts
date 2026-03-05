@@ -1,6 +1,9 @@
-import { RabbitMQClient } from "@repo/rabbitmq";
-import { UploadCompletePayload } from "@repo/rabbitmq/src/utils/interfaces";
-import { EXCHANGES, ROUTING_KEYS } from "@repo/rabbitmq/src/utils/constants";
+import {
+  RabbitMQClient,
+  UploadCompletePayload,
+  EXCHANGES,
+  ROUTING_KEYS,
+} from "@repo/rabbitmq";
 
 const client = new RabbitMQClient("upload");
 
