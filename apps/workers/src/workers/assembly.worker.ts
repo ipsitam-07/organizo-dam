@@ -9,7 +9,11 @@ import {
   deleteObject,
   buckets,
 } from "../services/storage.service";
-import { isTranscodableVideo, isImageType } from "../utils/temp";
+import {
+  isTranscodableVideo,
+  isImageType,
+  isDocumentType,
+} from "../utils/temp";
 
 export class AssemblyWorker extends BaseWorker {
   constructor() {
@@ -97,6 +101,16 @@ export class AssemblyWorker extends BaseWorker {
         )
       );
       logger.info(`[AssemblyWorker] Image fan-out: image`);
+    } else if (isDocumentType(mime)) {
+      // Document
+      publishTasks.push(
+        this.rabbit.publish(
+          EXCHANGES.UPLOADS,
+          WORKER_ROUTING_KEYS.PROCESS_DOCUMENT,
+          followOnPayload
+        )
+      );
+      logger.info(`[AssemblyWorker] Document fan-out: document`);
     } else {
       // Unknown type
       publishTasks.push(

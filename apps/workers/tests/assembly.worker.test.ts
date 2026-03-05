@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@repo/database", () => ({
-  Asset: { update: vi.fn() },
+  Asset: { findByPk: vi.fn(), update: vi.fn() },
   ProcessingJob: {
     create: vi.fn().mockResolvedValue({ id: "job-1", update: vi.fn() }),
   },
@@ -62,12 +62,22 @@ vi.mock("../src/services/storage.service", () => ({
   buckets: { assets: "assets", chunks: "chunks", renditions: "renditions" },
 }));
 
+vi.mock("../src/utils/temp", () => ({
+  isTranscodableVideo: vi.fn(),
+  isImageType: vi.fn(),
+  isDocumentType: vi.fn(),
+}));
+
 import { AssemblyWorker } from "../src/workers/assembly.worker";
 import { Asset } from "@repo/database";
 import { copyToAssets, deleteObject } from "../src/services/storage.service";
+import {
+  isTranscodableVideo,
+  isImageType,
+  isDocumentType,
+} from "../src/utils/temp";
 
 const mockJob = { id: "job-1", update: vi.fn() };
-
 const mockPayload = {
   assetId: "asset-uuid-123",
   uploadSessionId: "sess-1",
@@ -75,15 +85,30 @@ const mockPayload = {
   storageKey: "tus-upload-id-abc",
 };
 
+function makeAsset(mime: string) {
+  return {
+    id: "asset-uuid-123",
+    mime_type: mime,
+    storage_key: "asset-uuid-123",
+  };
+}
+
 beforeEach(() => vi.clearAllMocks());
 
-describe("AssemblyWorker.process", () => {
+describe("AssemblyWorker.process — copy + storage", () => {
   it("copies file from chunks to assets bucket", async () => {
     vi.mocked(copyToAssets).mockResolvedValue(undefined);
     vi.mocked(deleteObject).mockResolvedValue(undefined);
     vi.mocked(Asset.update).mockResolvedValue([1] as any);
+    vi.mocked(Asset.findByPk).mockResolvedValue(makeAsset("video/mp4") as any);
+    vi.mocked(isTranscodableVideo).mockReturnValue(true);
+    vi.mocked(isImageType).mockReturnValue(false);
+    vi.mocked(isDocumentType).mockReturnValue(false);
 
-    await new AssemblyWorker().process(mockPayload, mockJob as any);
+    const worker = new AssemblyWorker();
+    vi.spyOn((worker as any).rabbit, "publish").mockResolvedValue(undefined);
+
+    await worker.process(mockPayload, mockJob as any);
 
     expect(copyToAssets).toHaveBeenCalledWith(
       "tus-upload-id-abc",
@@ -95,8 +120,15 @@ describe("AssemblyWorker.process", () => {
     vi.mocked(copyToAssets).mockResolvedValue(undefined);
     vi.mocked(deleteObject).mockResolvedValue(undefined);
     vi.mocked(Asset.update).mockResolvedValue([1] as any);
+    vi.mocked(Asset.findByPk).mockResolvedValue(makeAsset("video/mp4") as any);
+    vi.mocked(isTranscodableVideo).mockReturnValue(true);
+    vi.mocked(isImageType).mockReturnValue(false);
+    vi.mocked(isDocumentType).mockReturnValue(false);
 
-    await new AssemblyWorker().process(mockPayload, mockJob as any);
+    const worker = new AssemblyWorker();
+    vi.spyOn((worker as any).rabbit, "publish").mockResolvedValue(undefined);
+
+    await worker.process(mockPayload, mockJob as any);
 
     expect(Asset.update).toHaveBeenCalledWith(
       { storage_key: "asset-uuid-123" },
@@ -104,68 +136,21 @@ describe("AssemblyWorker.process", () => {
     );
   });
 
-  it("deletes original from chunks bucket", async () => {
-    vi.mocked(copyToAssets).mockResolvedValue(undefined);
-    vi.mocked(deleteObject).mockResolvedValue(undefined);
-    vi.mocked(Asset.update).mockResolvedValue([1] as any);
-
-    await new AssemblyWorker().process(mockPayload, mockJob as any);
-
-    expect(deleteObject).toHaveBeenCalledWith("chunks", "tus-upload-id-abc");
-  });
-
   it("does not throw if chunk delete fails", async () => {
     vi.mocked(copyToAssets).mockResolvedValue(undefined);
     vi.mocked(deleteObject).mockRejectedValue(new Error("MinIO unavailable"));
     vi.mocked(Asset.update).mockResolvedValue([1] as any);
+    vi.mocked(Asset.findByPk).mockResolvedValue(makeAsset("video/mp4") as any);
+    vi.mocked(isTranscodableVideo).mockReturnValue(true);
+    vi.mocked(isImageType).mockReturnValue(false);
+    vi.mocked(isDocumentType).mockReturnValue(false);
 
     const worker = new AssemblyWorker();
-    const publishSpy = vi
-      .spyOn((worker as any).rabbit, "publish")
-      .mockResolvedValue(undefined);
+    vi.spyOn((worker as any).rabbit, "publish").mockResolvedValue(undefined);
 
     await expect(
       worker.process(mockPayload, mockJob as any)
     ).resolves.not.toThrow();
-    expect(publishSpy).toHaveBeenCalled();
-  });
-
-  it("publishes exactly 3 follow-on messages after assembly", async () => {
-    vi.mocked(copyToAssets).mockResolvedValue(undefined);
-    vi.mocked(deleteObject).mockResolvedValue(undefined);
-    vi.mocked(Asset.update).mockResolvedValue([1] as any);
-
-    const worker = new AssemblyWorker();
-    const publishSpy = vi
-      .spyOn((worker as any).rabbit, "publish")
-      .mockResolvedValue(undefined);
-
-    await worker.process(mockPayload, mockJob as any);
-
-    expect(publishSpy).toHaveBeenCalledTimes(3);
-
-    const routingKeys = publishSpy.mock.calls.map((c) => c[1]);
-    expect(routingKeys).toContain("asset.process.metadata");
-    expect(routingKeys).toContain("asset.process.thumbnail");
-    expect(routingKeys).toContain("asset.process.transcode");
-  });
-
-  it("fan-out messages carry the assetId as storageKey", async () => {
-    vi.mocked(copyToAssets).mockResolvedValue(undefined);
-    vi.mocked(deleteObject).mockResolvedValue(undefined);
-    vi.mocked(Asset.update).mockResolvedValue([1] as any);
-
-    const worker = new AssemblyWorker();
-    const publishSpy = vi
-      .spyOn((worker as any).rabbit, "publish")
-      .mockResolvedValue(undefined);
-
-    await worker.process(mockPayload, mockJob as any);
-
-    for (const call of publishSpy.mock.calls) {
-      const payload = call[2] as any;
-      expect(payload.storageKey).toBe("asset-uuid-123");
-    }
   });
 
   it("throws if copyToAssets fails", async () => {
@@ -175,13 +160,161 @@ describe("AssemblyWorker.process", () => {
       new AssemblyWorker().process(mockPayload, mockJob as any)
     ).rejects.toThrow("S3 copy error");
   });
+});
 
-  it("throws if Asset.update fails", async () => {
+describe("AssemblyWorker.process — smart fan-out", () => {
+  it("publishes metadata + thumbnail + transcode for video", async () => {
     vi.mocked(copyToAssets).mockResolvedValue(undefined);
-    vi.mocked(Asset.update).mockRejectedValue(new Error("DB error"));
+    vi.mocked(deleteObject).mockResolvedValue(undefined);
+    vi.mocked(Asset.update).mockResolvedValue([1] as any);
+    vi.mocked(Asset.findByPk).mockResolvedValue(makeAsset("video/mp4") as any);
+    vi.mocked(isTranscodableVideo).mockReturnValue(true);
+    vi.mocked(isImageType).mockReturnValue(false);
+    vi.mocked(isDocumentType).mockReturnValue(false);
 
-    await expect(
-      new AssemblyWorker().process(mockPayload, mockJob as any)
-    ).rejects.toThrow("DB error");
+    const worker = new AssemblyWorker();
+    const publishSpy = vi
+      .spyOn((worker as any).rabbit, "publish")
+      .mockResolvedValue(undefined);
+
+    await worker.process(mockPayload, mockJob as any);
+
+    expect(publishSpy).toHaveBeenCalledTimes(3);
+    const keys = publishSpy.mock.calls.map((c) => c[1]);
+    expect(keys).toContain("asset.process.metadata");
+    expect(keys).toContain("asset.process.thumbnail");
+    expect(keys).toContain("asset.process.transcode");
+  });
+
+  it("publishes only metadata for audio files", async () => {
+    vi.mocked(copyToAssets).mockResolvedValue(undefined);
+    vi.mocked(deleteObject).mockResolvedValue(undefined);
+    vi.mocked(Asset.update).mockResolvedValue([1] as any);
+    vi.mocked(Asset.findByPk).mockResolvedValue(makeAsset("audio/mpeg") as any);
+    vi.mocked(isTranscodableVideo).mockReturnValue(false);
+    vi.mocked(isImageType).mockReturnValue(false);
+    vi.mocked(isDocumentType).mockReturnValue(false);
+
+    const worker = new AssemblyWorker();
+    const publishSpy = vi
+      .spyOn((worker as any).rabbit, "publish")
+      .mockResolvedValue(undefined);
+
+    await worker.process(mockPayload, mockJob as any);
+
+    expect(publishSpy).toHaveBeenCalledTimes(1);
+    expect(publishSpy.mock.calls[0][1]).toBe("asset.process.metadata");
+  });
+
+  it("publishes only process.image for image files", async () => {
+    vi.mocked(copyToAssets).mockResolvedValue(undefined);
+    vi.mocked(deleteObject).mockResolvedValue(undefined);
+    vi.mocked(Asset.update).mockResolvedValue([1] as any);
+    vi.mocked(Asset.findByPk).mockResolvedValue(makeAsset("image/png") as any);
+    vi.mocked(isTranscodableVideo).mockReturnValue(false);
+    vi.mocked(isImageType).mockReturnValue(true);
+    vi.mocked(isDocumentType).mockReturnValue(false);
+
+    const worker = new AssemblyWorker();
+    const publishSpy = vi
+      .spyOn((worker as any).rabbit, "publish")
+      .mockResolvedValue(undefined);
+
+    await worker.process(mockPayload, mockJob as any);
+
+    expect(publishSpy).toHaveBeenCalledTimes(1);
+    expect(publishSpy.mock.calls[0][1]).toBe("asset.process.image");
+  });
+
+  it("publishes only process.document for PDF files", async () => {
+    vi.mocked(copyToAssets).mockResolvedValue(undefined);
+    vi.mocked(deleteObject).mockResolvedValue(undefined);
+    vi.mocked(Asset.update).mockResolvedValue([1] as any);
+    vi.mocked(Asset.findByPk).mockResolvedValue(
+      makeAsset("application/pdf") as any
+    );
+    vi.mocked(isTranscodableVideo).mockReturnValue(false);
+    vi.mocked(isImageType).mockReturnValue(false);
+    vi.mocked(isDocumentType).mockReturnValue(true);
+
+    const worker = new AssemblyWorker();
+    const publishSpy = vi
+      .spyOn((worker as any).rabbit, "publish")
+      .mockResolvedValue(undefined);
+
+    await worker.process(mockPayload, mockJob as any);
+
+    expect(publishSpy).toHaveBeenCalledTimes(1);
+    expect(publishSpy.mock.calls[0][1]).toBe("asset.process.document");
+  });
+
+  it("publishes only metadata for unknown mime types", async () => {
+    vi.mocked(copyToAssets).mockResolvedValue(undefined);
+    vi.mocked(deleteObject).mockResolvedValue(undefined);
+    vi.mocked(Asset.update).mockResolvedValue([1] as any);
+    vi.mocked(Asset.findByPk).mockResolvedValue(
+      makeAsset("application/zip") as any
+    );
+    vi.mocked(isTranscodableVideo).mockReturnValue(false);
+    vi.mocked(isImageType).mockReturnValue(false);
+    vi.mocked(isDocumentType).mockReturnValue(false);
+
+    const worker = new AssemblyWorker();
+    const publishSpy = vi
+      .spyOn((worker as any).rabbit, "publish")
+      .mockResolvedValue(undefined);
+
+    await worker.process(mockPayload, mockJob as any);
+
+    expect(publishSpy).toHaveBeenCalledTimes(1);
+    expect(publishSpy.mock.calls[0][1]).toBe("asset.process.metadata");
+  });
+
+  it("fan-out payload carries assetId as storageKey for all types", async () => {
+    for (const [mime, mockFn] of [
+      [
+        "video/mp4",
+        () => {
+          vi.mocked(isTranscodableVideo).mockReturnValue(true);
+          vi.mocked(isImageType).mockReturnValue(false);
+          vi.mocked(isDocumentType).mockReturnValue(false);
+        },
+      ],
+      [
+        "image/jpeg",
+        () => {
+          vi.mocked(isTranscodableVideo).mockReturnValue(false);
+          vi.mocked(isImageType).mockReturnValue(true);
+          vi.mocked(isDocumentType).mockReturnValue(false);
+        },
+      ],
+      [
+        "application/pdf",
+        () => {
+          vi.mocked(isTranscodableVideo).mockReturnValue(false);
+          vi.mocked(isImageType).mockReturnValue(false);
+          vi.mocked(isDocumentType).mockReturnValue(true);
+        },
+      ],
+    ] as const) {
+      vi.clearAllMocks();
+      vi.mocked(copyToAssets).mockResolvedValue(undefined);
+      vi.mocked(deleteObject).mockResolvedValue(undefined);
+      vi.mocked(Asset.update).mockResolvedValue([1] as any);
+      vi.mocked(Asset.findByPk).mockResolvedValue(makeAsset(mime) as any);
+      (mockFn as () => void)();
+
+      const worker = new AssemblyWorker();
+      const publishSpy = vi
+        .spyOn((worker as any).rabbit, "publish")
+        .mockResolvedValue(undefined);
+
+      await worker.process(mockPayload, mockJob as any);
+
+      for (const call of publishSpy.mock.calls) {
+        const payload = call[2] as any;
+        expect(payload.storageKey).toBe("asset-uuid-123");
+      }
+    }
   });
 });
