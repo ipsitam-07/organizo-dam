@@ -92,7 +92,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     ports:
-      - "9000:9000" # MinIO S3 API
+      - "9000:9000" # MinIO S3 auth
       - "9001:9001" # UI
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -126,12 +126,12 @@ services:
       "
     restart: on-failure
 
-  # apps/api — Backend
-  api:
+  # apps/auth — Backend
+  auth:
     build:
       context: .
-      dockerfile: ./apps/api/Dockerfile.dev
-    container_name: dam-api
+      dockerfile: ./apps/auth/Dockerfile.dev
+    container_name: dam-auth
     restart: unless-stopped
     networks:
       - dam-network
@@ -147,14 +147,16 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-      - /app/apps/api/node_modules
+      - /app/apps/auth/node_modules
       - /app/packages/config/node_modules
       - /app/packages/database/node_modules
       - /app/packages/logger/node_modules
     environment:
       NODE_ENV: ${NODE_ENV}
-      SERVICE_NAME: api
-      PORT: 3000
+      SERVICE_NAME: auth
+      AUTH_SERVICE_PORT: 3001
+
+      FRONTEND_URL: ${FRONTEND_URL}
 
       # DB
       POSTGRES_HOST: ${POSTGRES_HOST}
@@ -184,16 +186,15 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRY: ${JWT_EXPIRY}
     ports:
-      - "3000:3000"
       - "3001:3001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health/auth"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 15s
 
-  #apps/upload - Backend
+  # apps/upload — Upload service
   upload:
     build:
       context: .
@@ -211,20 +212,51 @@ services:
       - /app/packages/config/node_modules
       - /app/packages/database/node_modules
       - /app/packages/logger/node_modules
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      UPLOAD_SERVICE_PORT: 3002
 
-    env_file:
-      - .env
+      FRONTEND_URL: ${FRONTEND_URL}
+
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY}
     depends_on:
-      - postgres
-
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health/upload"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 15s
 
-  #apps/asset - Backend
+  # apps/asset — Asset service
   asset:
     build:
       context: .
@@ -242,14 +274,45 @@ services:
       - /app/packages/config/node_modules
       - /app/packages/database/node_modules
       - /app/packages/logger/node_modules
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      ASSET_SERVICE_PORT: 3003
 
-    env_file:
-      - .env
+      FRONTEND_URL: ${FRONTEND_URL}
+
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY}
     depends_on:
-      - postgres
-
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health/asset"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -265,14 +328,14 @@ services:
     networks:
       - dam-network
     depends_on:
-      - api
+      - auth
     volumes:
       - .:/app
       - /app/node_modules
     environment:
       NODE_ENV: ${NODE_ENV}
-      VITE_API_BASE_URL: /api
-      VITE_TUS_ENDPOINT: /api/upload/core/
+      VITE_auth_BASE_URL: /auth
+      VITE_TUS_ENDPOINT: /auth/upload/core/
     ports:
       - "5173:5173"
     healthcheck:
@@ -282,7 +345,7 @@ services:
       retries: 3
       start_period: 10s
 
-  #Workers
+  # Workers
   workers:
     build:
       context: .
@@ -303,10 +366,26 @@ services:
       minio:
         condition: service_healthy
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV}
 
-  # NGINX
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+
+  # NGINX — reverse proxy
   nginx:
     image: nginx:alpine
     container_name: dam-nginx
@@ -314,7 +393,7 @@ services:
     networks:
       - dam-network
     depends_on:
-      - api
+      - auth
       - upload
       - asset
       - web
