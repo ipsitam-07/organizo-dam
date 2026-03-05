@@ -88,6 +88,17 @@
       }
     },
     {
+      "name": "image-processing",
+      "vhost": "dam",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dam.dead-letter",
+        "x-dead-letter-routing-key": "job.dead_lettered",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
       "name": "asset-service-events",
       "vhost": "dam",
       "durable": true,
@@ -133,6 +144,14 @@
       "destination": "transcode-processing",
       "destination_type": "queue",
       "routing_key": "asset.process.transcode",
+      "arguments": {}
+    },
+    {
+      "source": "dam.uploads",
+      "vhost": "dam",
+      "destination": "image-processing",
+      "destination_type": "queue",
+      "routing_key": "asset.process.image",
       "arguments": {}
     },
     {

@@ -55,6 +55,9 @@ export function mimeToExtension(mimeType: string): string {
     "image/png": "png",
     "image/gif": "gif",
     "image/webp": "webp",
+    "image/tiff": "tiff",
+    "image/avif": "avif",
+    "image/svg+xml": "svg",
     "audio/mpeg": "mp3",
     "audio/wav": "wav",
     "audio/ogg": "ogg",
@@ -80,4 +83,16 @@ export function isTranscodableVideo(mimeType: string): boolean {
 //Returns true if FFprobe can extract some imp metadata from the type
 export function isProbeableMedia(mimeType: string): boolean {
   return mimeType.startsWith("video/") || mimeType.startsWith("audio/");
+}
+
+//Returns true if sharp can process this type
+export function isImageType(mimeType: string): boolean {
+  return [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/tiff",
+    "image/avif",
+  ].includes(mimeType);
 }

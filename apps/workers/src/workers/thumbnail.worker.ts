@@ -14,6 +14,7 @@ import {
   buckets,
 } from "../services/storage.service";
 import { extractThumbnail } from "../services/ffmpeg.service";
+import { resizeImage } from "../services/sharp.service";
 import {
   writeTempFile,
   cleanTempFile,
@@ -21,8 +22,10 @@ import {
   getFileSize,
   mimeToExtension,
   isTranscodableVideo,
+  isImageType,
 } from "../utils/temp";
 
+//Thumbnail worker
 export class ThumbnailWorker extends BaseWorker {
   constructor() {
     super(
@@ -42,20 +45,29 @@ export class ThumbnailWorker extends BaseWorker {
     const asset = await Asset.findByPk(assetId);
     if (!asset) throw new Error(`Asset ${assetId} not found`);
 
-    if (!isTranscodableVideo(asset.mime_type)) {
+    if (isTranscodableVideo(asset.mime_type)) {
+      await this.processVideoThumbnail(assetId, asset, job);
+    } else if (isImageType(asset.mime_type)) {
+      await this.processImageThumbnail(assetId, asset, job);
+    } else {
       logger.info(
-        `[ThumbnailWorker] Skipping, not a video (mime="${asset.mime_type}")`
+        `[ThumbnailWorker] Skipping — unsupported mime="${asset.mime_type}"`
       );
-      return;
     }
+  }
 
+  //Video
+
+  private async processVideoThumbnail(
+    assetId: string,
+    asset: any,
+    job: ProcessingJob
+  ): Promise<void> {
     await this.updateProgress(job, 10);
 
-    // Thumbnail and Metadata run in parallel
     const meta = await AssetMetadata.findOne({ where: { asset_id: assetId } });
     const duration = meta?.duration_secs ?? 10;
 
-    // Download source video
     const ext = mimeToExtension(asset.mime_type);
     const buffer = await getObjectBuffer(buckets.assets, asset.storage_key);
     const tempInput = await writeTempFile(buffer, ext);
@@ -79,7 +91,7 @@ export class ThumbnailWorker extends BaseWorker {
       );
       await this.updateProgress(job, 90);
 
-      await AssetRendition.upsert({
+      const [rendition] = await AssetRendition.upsert({
         asset_id: assetId,
         rendition_type: "thumbnail",
         label: "thumbnail",
@@ -91,13 +103,76 @@ export class ThumbnailWorker extends BaseWorker {
         duration_secs: null,
         status: "ready",
       });
+      const renditionId = (rendition as AssetRendition).id;
+
+      await job.update({ rendition_id: renditionId });
+      await this.publishResult(
+        assetId,
+        job.id,
+        "completed",
+        undefined,
+        renditionId
+      );
 
       logger.info(
-        `[ThumbnailWorker] Done for asset="${assetId}" (${(thumbSize / 1024).toFixed(0)}KB)`
+        `[ThumbnailWorker] Video thumbnail done — ${(thumbSize / 1024).toFixed(0)}KB for asset="${assetId}"`
       );
     } finally {
       await cleanTempFile(tempInput);
       if (tempThumb) await cleanTempFile(tempThumb);
     }
+  }
+
+  // Image
+
+  private async processImageThumbnail(
+    assetId: string,
+    asset: any,
+    job: ProcessingJob
+  ): Promise<void> {
+    await this.updateProgress(job, 20);
+
+    const buffer = await getObjectBuffer(buckets.assets, asset.storage_key);
+    const storageKey = `${assetId}/thumbnail.jpg`;
+
+    await this.updateProgress(job, 40);
+
+    const thumbBuffer = await resizeImage(buffer, {
+      label: "thumbnail",
+      width: 640,
+      format: "jpeg",
+      mimeType: "image/jpeg",
+      ext: "jpg",
+      quality: 80,
+    });
+
+    await putObject(buckets.renditions, storageKey, thumbBuffer, "image/jpeg");
+    await this.updateProgress(job, 85);
+
+    const [rendition] = await AssetRendition.upsert({
+      asset_id: assetId,
+      rendition_type: "thumbnail",
+      label: "thumbnail",
+      storage_key: storageKey,
+      mime_type: "image/jpeg",
+      size_bytes: thumbBuffer.length,
+      width: 640,
+      height: null,
+      status: "ready",
+    });
+    const renditionId = (rendition as AssetRendition).id;
+
+    await job.update({ rendition_id: renditionId });
+    await this.publishResult(
+      assetId,
+      job.id,
+      "completed",
+      undefined,
+      renditionId
+    );
+
+    logger.info(
+      `[ThumbnailWorker] Image thumbnail done — ${(thumbBuffer.length / 1024).toFixed(0)}KB for asset="${assetId}"`
+    );
   }
 }

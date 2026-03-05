@@ -16,3 +16,21 @@ export interface TranscodeProfile {
   videoBitrate: string;
   audioBitrate: string;
 }
+
+export interface ImageMetadata {
+  width: number;
+  height: number;
+  format: string;
+  size_bytes: number;
+  hasAlpha: boolean;
+  raw_metadata: object;
+}
+
+export interface ImageRenditionSpec {
+  label: string;
+  width: number;
+  format: "jpeg" | "webp";
+  mimeType: string;
+  ext: string;
+  quality: number;
+}

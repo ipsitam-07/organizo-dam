@@ -13,10 +13,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@repo/database": "workspace:*",
-    "@repo/config": "workspace:*",
-    "@repo/logger": "workspace:*",
     "@repo/auth": "workspace:*",
+    "@repo/config": "workspace:*",
+    "@repo/database": "workspace:*",
+    "@repo/logger": "workspace:*",
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -32,7 +32,7 @@
     "@types/node": "^20.11.24",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
-    "tsx": "^4.7.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.3.3"
   }
 }

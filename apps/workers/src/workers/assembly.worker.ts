@@ -9,6 +9,7 @@ import {
   deleteObject,
   buckets,
 } from "../services/storage.service";
+import { isTranscodableVideo, isImageType } from "../utils/temp";
 
 export class AssemblyWorker extends BaseWorker {
   constructor() {
@@ -43,6 +44,11 @@ export class AssemblyWorker extends BaseWorker {
     }
 
     await this.updateProgress(job, 90);
+
+    const asset = await Asset.findByPk(assetId);
+    if (!asset) throw new Error(`Asset ${assetId} not found after copy`);
+
+    const mime = asset.mime_type;
     const followOnPayload: UploadCompletePayload = {
       assetId,
       uploadSessionId,
@@ -50,26 +56,62 @@ export class AssemblyWorker extends BaseWorker {
       storageKey: assetId,
     };
 
-    await Promise.all([
-      this.rabbit.publish(
-        EXCHANGES.UPLOADS,
-        WORKER_ROUTING_KEYS.PROCESS_METADATA,
-        followOnPayload
-      ),
-      this.rabbit.publish(
-        EXCHANGES.UPLOADS,
-        WORKER_ROUTING_KEYS.PROCESS_THUMBNAIL,
-        followOnPayload
-      ),
-      this.rabbit.publish(
-        EXCHANGES.UPLOADS,
-        WORKER_ROUTING_KEYS.PROCESS_TRANSCODE,
-        followOnPayload
-      ),
-    ]);
+    const publishTasks: Promise<void>[] = [];
 
-    logger.info(
-      `[AssemblyWorker] Fan-out sent- metadata + thumbnail + transcode for asset="${assetId}"`
-    );
+    if (isTranscodableVideo(mime)) {
+      publishTasks.push(
+        this.rabbit.publish(
+          EXCHANGES.UPLOADS,
+          WORKER_ROUTING_KEYS.PROCESS_METADATA,
+          followOnPayload
+        ),
+        this.rabbit.publish(
+          EXCHANGES.UPLOADS,
+          WORKER_ROUTING_KEYS.PROCESS_THUMBNAIL,
+          followOnPayload
+        ),
+        this.rabbit.publish(
+          EXCHANGES.UPLOADS,
+          WORKER_ROUTING_KEYS.PROCESS_TRANSCODE,
+          followOnPayload
+        )
+      );
+      logger.info(
+        `[AssemblyWorker] Video fan-out: metadata + thumbnail + transcode`
+      );
+    } else if (mime.startsWith("audio/")) {
+      publishTasks.push(
+        this.rabbit.publish(
+          EXCHANGES.UPLOADS,
+          WORKER_ROUTING_KEYS.PROCESS_METADATA,
+          followOnPayload
+        )
+      );
+      logger.info(`[AssemblyWorker] Audio fan-out: metadata`);
+    } else if (isImageType(mime)) {
+      publishTasks.push(
+        this.rabbit.publish(
+          EXCHANGES.UPLOADS,
+          WORKER_ROUTING_KEYS.PROCESS_IMAGE,
+          followOnPayload
+        )
+      );
+      logger.info(`[AssemblyWorker] Image fan-out: image`);
+    } else {
+      // Unknown type
+      publishTasks.push(
+        this.rabbit.publish(
+          EXCHANGES.UPLOADS,
+          WORKER_ROUTING_KEYS.PROCESS_METADATA,
+          followOnPayload
+        )
+      );
+      logger.info(
+        `[AssemblyWorker] Unknown mime="${mime}" fan-out: metadata (stub)`
+      );
+    }
+
+    await Promise.all(publishTasks);
+    logger.info(`[AssemblyWorker] Fan-out complete for asset="${assetId}"`);
   }
 }

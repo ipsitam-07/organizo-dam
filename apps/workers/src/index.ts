@@ -3,6 +3,7 @@ import { AssemblyWorker } from "./workers/assembly.worker";
 import { MetadataWorker } from "./workers/metadata.worker";
 import { ThumbnailWorker } from "./workers/thumbnail.worker";
 import { TranscodeWorker } from "./workers/transcode.worker";
+import { ImageWorker } from "./workers/image.worker";
 
 async function main() {
   logger.info("[Workers] Starting DAM Platform worker pipeline...");
@@ -11,6 +12,7 @@ async function main() {
     new MetadataWorker(),
     new ThumbnailWorker(),
     new TranscodeWorker(),
+    new ImageWorker(),
   ];
 
   await Promise.all(workers.map((w) => w.start()));

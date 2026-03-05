@@ -5,18 +5,15 @@ import { BaseWorker } from "./base.worker";
 import { WORKER_QUEUES, WORKER_ROUTING_KEYS } from "../utils/constants";
 import { getObjectBuffer, buckets } from "../services/storage.service";
 import { probeFile } from "../services/ffmpeg.service";
+import { probeImage } from "../services/sharp.service";
 import {
   writeTempFile,
   cleanTempFile,
   mimeToExtension,
   isProbeableMedia,
+  isImageType,
 } from "../utils/temp";
 
-/**
- * Metadata Worker
- * Consumes:  dam.uploads (direct)
- * Publishes: dam.events  (fanout)
- */
 export class MetadataWorker extends BaseWorker {
   constructor() {
     super(
@@ -38,48 +35,72 @@ export class MetadataWorker extends BaseWorker {
 
     await this.updateProgress(job, 10);
 
-    if (!isProbeableMedia(asset.mime_type)) {
-      logger.info(
-        `[MetadataWorker] Skipping FFprobe for mime="${asset.mime_type}"`
-      );
-      await AssetMetadata.upsert({
-        asset_id: assetId,
-        format: asset.mime_type,
-        extracted_at: new Date(),
-      });
+    //Image
+    if (isProbeableMedia(asset.mime_type)) {
+      const ext = mimeToExtension(asset.mime_type);
+      const buffer = await getObjectBuffer(buckets.assets, asset.storage_key);
+      await this.updateProgress(job, 30);
+
+      const tempPath = await writeTempFile(buffer, ext);
+      try {
+        const meta = await probeFile(tempPath);
+        await this.updateProgress(job, 80);
+
+        await AssetMetadata.upsert({
+          asset_id: assetId,
+          width: meta.width ?? null,
+          height: meta.height ?? null,
+          format: meta.format ?? null,
+          duration_secs: meta.duration_secs ?? null,
+          bitrate_kbps: meta.bitrate_kbps ?? null,
+          video_codec: meta.video_codec ?? null,
+          audio_codec: meta.audio_codec ?? null,
+          frame_rate: meta.frame_rate ?? null,
+          raw_metadata: meta.raw_metadata,
+          extracted_at: new Date(),
+        });
+
+        logger.info(
+          `[MetadataWorker] Video/Audio: ${meta.width}x${meta.height} ` +
+            `${meta.duration_secs?.toFixed(1)}s codec=${meta.video_codec} for asset="${assetId}"`
+        );
+      } finally {
+        await cleanTempFile(tempPath);
+      }
       return;
     }
 
-    const ext = mimeToExtension(asset.mime_type);
-    const buffer = await getObjectBuffer(buckets.assets, asset.storage_key);
-    await this.updateProgress(job, 30);
+    // Image
+    if (isImageType(asset.mime_type)) {
+      const buffer = await getObjectBuffer(buckets.assets, asset.storage_key);
+      await this.updateProgress(job, 40);
 
-    const tempPath = await writeTempFile(buffer, ext);
-
-    try {
-      const meta = await probeFile(tempPath);
-      await this.updateProgress(job, 80);
+      const meta = await probeImage(buffer);
 
       await AssetMetadata.upsert({
         asset_id: assetId,
-        width: meta.width ?? null,
-        height: meta.height ?? null,
-        format: meta.format ?? null,
-        duration_secs: meta.duration_secs ?? null,
-        bitrate_kbps: meta.bitrate_kbps ?? null,
-        video_codec: meta.video_codec ?? null,
-        audio_codec: meta.audio_codec ?? null,
-        frame_rate: meta.frame_rate ?? null,
+        width: meta.width,
+        height: meta.height,
+        format: meta.format,
+        page_count: 1,
         raw_metadata: meta.raw_metadata,
         extracted_at: new Date(),
       });
 
       logger.info(
-        `[MetadataWorker] Done for asset="${assetId}" ` +
-          `(${meta.width}x${meta.height}, ${meta.duration_secs?.toFixed(1)}s, codec=${meta.video_codec})`
+        `[MetadataWorker] Image: ${meta.width}x${meta.height} ${meta.format} for asset="${assetId}"`
       );
-    } finally {
-      await cleanTempFile(tempPath);
+      return;
     }
+
+    //Unknown
+    logger.info(
+      `[MetadataWorker] Unknown mime="${asset.mime_type}" — writing stub row`
+    );
+    await AssetMetadata.upsert({
+      asset_id: assetId,
+      format: asset.mime_type,
+      extracted_at: new Date(),
+    });
   }
 }
