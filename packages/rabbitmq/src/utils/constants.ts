@@ -13,6 +13,8 @@ export const ROUTING_KEYS = {
   PROCESS_METADATA: "asset.process.metadata", // Metadata Worker
   PROCESS_THUMBNAIL: "asset.process.thumbnail", // Thumbnail Worker
   PROCESS_TRANSCODE: "asset.process.transcode", // Transcode Worker
+  PROCESS_IMAGE: "asset.process.image", //Image Worker
+  PROCESS_DOCUMENT: "asset.process.document", //Document worker
 } as const;
 
 export const QUEUES = {
@@ -21,6 +23,9 @@ export const QUEUES = {
   METADATA_PROCESSING: "metadata-processing", // Metadata Worker
   THUMBNAIL_PROCESSING: "thumbnail-processing", // Thumbnail Worker
   TRANSCODE_PROCESSING: "transcode-processing", //Transcode Worker
+
+  IMAGE_PROCESSING: "image-processing", // Image Worker
+  DOCUMENT_PROCESSING: "document-processing", // Document Worker
 
   //Asset service consumer
   ASSET_SERVICE_EVENTS: "asset-service-events",

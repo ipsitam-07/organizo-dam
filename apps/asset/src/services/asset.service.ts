@@ -27,7 +27,7 @@ export class AssetService {
     if (!asset) throw new NotFoundError("Asset not found");
 
     // Delete original
-    await deleteObject(config.minio.buckets.chunks, asset.storage_key);
+    await deleteObject(config.minio.buckets.assets, asset.storage_key);
 
     // Destroy the DB row
     await asset.destroy();
@@ -169,7 +169,7 @@ export class AssetService {
     if (!asset) throw new NotFoundError("Asset not found");
 
     const url = await getPresignedUrl(
-      config.minio.buckets.chunks,
+      config.minio.buckets.assets,
       asset.storage_key
     );
 
