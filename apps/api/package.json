@@ -19,6 +19,7 @@
     "@repo/config": "workspace:*",
     "@repo/database": "workspace:*",
     "@repo/logger": "workspace:*",
+    "@repo/rate-limit": "workspace:*",
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

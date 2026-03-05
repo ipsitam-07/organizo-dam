@@ -8,9 +8,9 @@ import { connectRedis } from "@repo/auth";
 import { initDb } from "@repo/database";
 import assetRoutes from "./routes/asset.route";
 import shareRoutes from "./routes/share.route";
-import { RabbitMQClient } from "@repo/rabbitmq";
-import { QUEUES } from "@repo/rabbitmq/src/utils/constants";
+import { RabbitMQClient, QUEUES } from "@repo/rabbitmq";
 import { handleJobEvent } from "./services/job-events.service";
+import { apiLimiter, shareLimiter } from "@repo/rate-limit";
 
 export const app = express();
 app.use(helmet());
@@ -34,8 +34,8 @@ app.get("/health/asset", (_req, res) => {
 });
 
 //Routes
-app.use("/api/assets", assetRoutes);
-app.use("/api/share", shareRoutes);
+app.use("/api/assets", apiLimiter, assetRoutes);
+app.use("/api/share", shareLimiter, shareRoutes);
 
 app.use(errorHandler);
 

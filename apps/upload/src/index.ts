@@ -11,6 +11,7 @@ import { connectRedis, requireAuth, AuthRequest } from "@repo/auth";
 import { uploadService } from "./services/upload.service";
 import uploadRoutes from "./routes/upload.route";
 import { errorHandler } from "./middleware/error.middleware";
+import { uploadLimiter } from "@repo/rate-limit";
 
 export const app = express();
 app.use(helmet());
@@ -34,7 +35,7 @@ app.get("/health/upload", (_req, res) => {
 });
 
 //Routes
-app.use("/api/upload", uploadRoutes);
+app.use("/api/upload", uploadLimiter, uploadRoutes);
 
 export function createTusServer() {
   const tusServer = new Server({
