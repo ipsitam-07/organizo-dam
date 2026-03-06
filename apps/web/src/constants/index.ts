@@ -22,3 +22,27 @@ export const API_ENDPOINTS = {
     ME: "/auth/me",
   },
 } as const;
+
+export const APP_NAME = "Organizo";
+
+export const UI_STRINGS = {
+  SIGN_UP_PAGE: {
+    SUB_HEADING: "Digital Asset Management",
+    CREATE_ACCOUNT: "Create an account",
+    GET_STARTED: "Get started — it's free",
+    HAVE_ACCOUNT: "Already have an account?",
+    AGREE: "By continuing you agree to our",
+    TERMS: "Terms of Service",
+    PRIVACY: "Privacy Policy",
+    AND: "and",
+  },
+  CREDENTIALS: {
+    EMAIL: "Email",
+    PASSWORD: "Password",
+  },
+
+  BUTTONS: {
+    CREATE: "Create account",
+    SIGN_IN: "Sign in",
+  },
+} as const;

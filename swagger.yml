@@ -21,11 +21,11 @@ info:
 
 servers:
   - url: http://localhost:3001
-    description: Auth service 
+    description: Auth service
   - url: http://localhost:3002
-    description: Upload service 
+    description: Upload service
   - url: http://localhost:3003
-    description: Asset service 
+    description: Asset service
 
 components:
   securitySchemes:
@@ -80,7 +80,7 @@ components:
           type: string
           example: User registered successfully
         user:
-          $ref: '#/components/schemas/UserPublic'
+          $ref: "#/components/schemas/UserPublic"
 
     LoginRequest:
       type: object
@@ -105,7 +105,7 @@ components:
           description: "JWT — include as Authorization: Bearer <token>"
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         user:
-          $ref: '#/components/schemas/UserPublic'
+          $ref: "#/components/schemas/UserPublic"
 
     UserPublic:
       type: object
@@ -126,7 +126,7 @@ components:
           type: boolean
           example: true
 
-    # Asset 
+    # Asset
     Asset:
       type: object
       properties:
@@ -164,13 +164,13 @@ components:
         Tags:
           type: array
           items:
-            $ref: '#/components/schemas/Tag'
+            $ref: "#/components/schemas/Tag"
         AssetRenditions:
           type: array
           items:
-            $ref: '#/components/schemas/Rendition'
+            $ref: "#/components/schemas/Rendition"
         AssetMetadata:
-          $ref: '#/components/schemas/AssetMetadata'
+          $ref: "#/components/schemas/AssetMetadata"
 
     AssetMetadata:
       type: object
@@ -247,7 +247,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Asset'
+            $ref: "#/components/schemas/Asset"
         total:
           type: integer
           example: 84
@@ -283,7 +283,8 @@ components:
                 format: uuid
               job_type:
                 type: string
-                enum: [assembly, metadata, thumbnail, transcode, image, document]
+                enum:
+                  [assembly, metadata, thumbnail, transcode, image, document]
               status:
                 type: string
                 enum: [queued, processing, completed, failed]
@@ -442,28 +443,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: "#/components/schemas/RegisterRequest"
       responses:
-        '201':
+        "201":
           description: User registered successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RegisterResponse'
-        '409':
+                $ref: "#/components/schemas/RegisterResponse"
+        "409":
           description: Email already in use
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Email already in use
-        '422':
+        "422":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: "#/components/schemas/ValidationErrorResponse"
 
   /api/auth/login:
     post:
@@ -474,20 +475,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '401':
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
           description: Invalid credentials or inactive account
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Invalid credentials
 
@@ -499,7 +500,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Logged out successfully
           content:
             application/json:
@@ -509,12 +510,12 @@ paths:
                   message:
                     type: string
                     example: Logged out successfully
-        '401':
+        "401":
           description: Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/auth/me:
     get:
@@ -523,7 +524,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Current user profile
           content:
             application/json:
@@ -534,13 +535,13 @@ paths:
                     type: string
                     example: Profile retrieved successfully
                   user:
-                    $ref: '#/components/schemas/UserPublic'
-        '401':
+                    $ref: "#/components/schemas/UserPublic"
+        "401":
           description: Missing or invalid token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ASSETS
   /api/assets:
@@ -589,24 +590,24 @@ paths:
             type: string
             format: date-time
       responses:
-        '200':
+        "200":
           description: Paginated asset list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedAssets'
-        '401':
+                $ref: "#/components/schemas/PaginatedAssets"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Invalid query parameters
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: "#/components/schemas/ValidationErrorResponse"
 
   /api/assets/stats:
     get:
@@ -616,7 +617,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Platform statistics
           content:
             application/json:
@@ -624,19 +625,19 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/AdminStats'
-        '401':
+                    $ref: "#/components/schemas/AdminStats"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Admin role required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Forbidden
 
@@ -654,7 +655,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Asset found
           content:
             application/json:
@@ -662,19 +663,19 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Asset'
-        '401':
+                    $ref: "#/components/schemas/Asset"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
     delete:
       tags: [Assets]
@@ -690,20 +691,20 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
+        "204":
           description: Asset deleted
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/assets/{id}/download:
     get:
@@ -731,30 +732,30 @@ paths:
             example: thumbnail
           description: Rendition label — omit to download the original file
       responses:
-        '200':
+        "200":
           description: Pre-signed URL
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PresignedDownload'
-        '401':
+                $ref: "#/components/schemas/PresignedDownload"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset or rendition not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: Asset not ready for download
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Asset is not ready for download
 
@@ -773,7 +774,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Processing status
           content:
             application/json:
@@ -781,19 +782,19 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/ProcessingStatus'
-        '401':
+                    $ref: "#/components/schemas/ProcessingStatus"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/assets/{id}/tags:
     post:
@@ -822,7 +823,7 @@ paths:
                   maxLength: 64
                   example: campaign-2025
       responses:
-        '201':
+        "201":
           description: Tag added
           content:
             application/json:
@@ -830,25 +831,25 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Tag'
-        '401':
+                    $ref: "#/components/schemas/Tag"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: "#/components/schemas/ValidationErrorResponse"
 
   /api/assets/{id}/tags/{tagId}:
     delete:
@@ -870,20 +871,20 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
+        "204":
           description: Tag removed
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset or tag not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/assets/{id}/share:
     post:
@@ -906,13 +907,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateShareLinkRequest'
+              $ref: "#/components/schemas/CreateShareLinkRequest"
             example:
               password: mypassword
               max_downloads: 5
               expires_in_hours: 24
       responses:
-        '201':
+        "201":
           description: Share link created
           content:
             application/json:
@@ -920,25 +921,25 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/ShareLink'
-        '401':
+                    $ref: "#/components/schemas/ShareLink"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+                $ref: "#/components/schemas/ValidationErrorResponse"
 
     get:
       tags: [Assets]
@@ -953,7 +954,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Share links
           content:
             application/json:
@@ -963,19 +964,19 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ShareLink'
-        '401':
+                      $ref: "#/components/schemas/ShareLink"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/assets/{id}/share/{linkId}:
     delete:
@@ -997,26 +998,26 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
+        "204":
           description: Share link revoked
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Link belongs to a different asset
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Asset or share link not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   # SHARE (public)
   /api/share/{token}:
@@ -1046,38 +1047,38 @@ paths:
                   type: string
                   example: mypassword
       responses:
-        '200':
+        "200":
           description: Download URL
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/PresignedDownload'
+                  - $ref: "#/components/schemas/PresignedDownload"
                   - type: object
                     properties:
                       filename:
                         type: string
                         example: promo-video.mp4
-        '401':
+        "401":
           description: Password required or incorrect
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Password required
-        '404':
+        "404":
           description: Share link not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '410':
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
           description: Share link has expired or hit its download limit
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Share link has expired
 
@@ -1122,7 +1123,7 @@ paths:
             description: Comma-separated base64-encoded key-value pairs
             example: filename cHJvbW8ubXA0,filetype dmlkZW8vbXA0
       responses:
-        '201':
+        "201":
           description: Upload created — use the `Location` header URL for PATCH requests
           headers:
             Location:
@@ -1133,18 +1134,18 @@ paths:
               schema:
                 type: string
                 example: "1.0.0"
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
           description: Unsupported file type or missing metadata
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: 'Unsupported file type "application/zip"'
 
@@ -1189,15 +1190,15 @@ paths:
               type: string
               format: binary
       responses:
-        '204':
+        "204":
           description: Chunk accepted
           headers:
             Upload-Offset:
               schema:
                 type: integer
-        '409':
+        "409":
           description: Offset conflict
-        '410':
+        "410":
           description: Upload no longer exists
 
     head:
@@ -1218,7 +1219,7 @@ paths:
             type: string
             example: "1.0.0"
       responses:
-        '200':
+        "200":
           description: Current upload offset
           headers:
             Upload-Offset:
@@ -1235,7 +1236,7 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Upload sessions
           content:
             application/json:
@@ -1245,13 +1246,13 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/UploadSession'
-        '401':
+                      $ref: "#/components/schemas/UploadSession"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/upload/sessions/{id}:
     get:
@@ -1267,7 +1268,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Upload session
           content:
             application/json:
@@ -1275,19 +1276,19 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/UploadSession'
-        '401':
+                    $ref: "#/components/schemas/UploadSession"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Session not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/upload/sessions/{id}/cancel:
     post:
@@ -1304,7 +1305,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Session cancelled
           content:
             application/json:
@@ -1315,27 +1316,27 @@ paths:
                     type: string
                     example: Upload cancelled successfully
                   data:
-                    $ref: '#/components/schemas/UploadSession'
-        '400':
+                    $ref: "#/components/schemas/UploadSession"
+        "400":
           description: Cannot cancel a completed upload
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 error: Cannot cancel a completed upload
-        '401':
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Session not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   # HEALTH
   /health/auth:
@@ -1343,7 +1344,7 @@ paths:
       tags: [Auth]
       summary: Auth service health check
       responses:
-        '200':
+        "200":
           description: OK
           content:
             text/plain:
@@ -1356,7 +1357,7 @@ paths:
       tags: [Upload]
       summary: Upload service health check
       responses:
-        '200':
+        "200":
           description: OK
           content:
             text/plain:
@@ -1369,7 +1370,7 @@ paths:
       tags: [Assets]
       summary: Asset service health check
       responses:
-        '200':
+        "200":
           description: OK
           content:
             text/plain:
