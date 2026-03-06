@@ -41,8 +41,16 @@ export const UI_STRINGS = {
     PASSWORD: "Password",
   },
 
+  LOGIN_PAGE: {
+    SUB_HEADING: "Digital Asset Management",
+    WELCOME_BACK: "Welcome back",
+    SIGN_IN_TO_CONTINUE: "Sign in to continue",
+    NO_ACCOUNT: "Don't have an account?",
+    FORGOT_PASSWORD: "Forgot password?",
+  },
   BUTTONS: {
     CREATE: "Create account",
     SIGN_IN: "Sign in",
+    SIGN_UP: "Sign up",
   },
 } as const;
