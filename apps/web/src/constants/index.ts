@@ -21,6 +21,16 @@ export const API_ENDPOINTS = {
     LOGOUT: "/auth/logout",
     ME: "/auth/me",
   },
+  ASSETS: {
+    LIST: "/assets",
+    STATS: "/assets/stats",
+    DETAIL: (id: string) => `/assets/${id}`,
+    DOWNLOAD: (id: string) => `/assets/${id}/download`,
+    TAGS: (id: string) => `/assets/${id}/tags`,
+    TAG: (id: string, tid: string) => `/assets/${id}/tags/${tid}`,
+    SHARE: (id: string) => `/assets/${id}/share`,
+  },
+  UPLOAD: { TUS: "/upload" },
 } as const;
 
 export const APP_NAME = "Organizo";

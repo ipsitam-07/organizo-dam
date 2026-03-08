@@ -1,5 +1,5 @@
 import type { ROLE } from "../constants";
-
+import type { ModalKind } from "@/types";
 export interface ApiError {
   message: string;
   status: number;
@@ -42,4 +42,60 @@ export interface AuthContextValue extends AuthState {
 export interface ExtendedAuthContextValue extends AuthContextValue {
   isHydrating: boolean;
   setHydrated: () => void;
+}
+
+export type AssetStatus = "queued" | "processing" | "ready" | "failed";
+export interface Tag {
+  id: string;
+  name: string;
+  source: "user" | "auto";
+}
+
+export interface Asset {
+  id: string;
+  user_id: string;
+  upload_session_id: string | null;
+  original_filename: string;
+  storage_key: string;
+  mime_type: string;
+  size_bytes: number;
+  status: AssetStatus;
+  download_count: number;
+  created_at: string;
+  updated_at: string;
+  Tags?: Tag[];
+}
+
+export interface UIState {
+  modal: ModalKind | null;
+  asset: Asset | null;
+}
+
+export interface AssetListResponse {
+  data: Asset[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+export interface AssetListParams {
+  page?: number;
+  limit?: number;
+  status?: AssetStatus;
+  mime_type?: string;
+  tag?: string;
+}
+export interface ShareLink {
+  id: string;
+  asset_id: string;
+  token: string;
+  expires_at?: string;
+  max_downloads?: number;
+  download_count: number;
+  created_at: string;
+}
+export interface CreateShareLinkPayload {
+  password?: string;
+  max_downloads?: number;
+  expires_in_hours?: number;
 }
