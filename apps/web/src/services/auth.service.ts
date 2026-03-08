@@ -29,7 +29,9 @@ export const authApi = {
   },
 
   getMe: async (): Promise<User> => {
-    const { data } = await apiClient.get<{ data: User }>(API_ENDPOINTS.AUTH.ME);
-    return data.data;
+    const { data } = await apiClient.get<User | { data: User }>(
+      API_ENDPOINTS.AUTH.ME
+    );
+    return "data" in data ? data.data : data;
   },
 };

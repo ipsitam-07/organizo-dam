@@ -1,18 +1,20 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { authApi } from "@/services/auth.service";
-import { useAuth } from "@/context/AuthContext";
+import { useLogin } from "@/hooks/useAuth";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import type { ApiError } from "@/interfaces";
 import { APP_NAME, UI_STRINGS } from "@/constants";
+import { Eye, EyeOff } from "lucide-react";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { mutateAsync: login, isPending } = useLogin();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{
     email?: string;
     password?: string;
@@ -27,7 +29,7 @@ export function LoginPage() {
     return e;
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) {
@@ -36,13 +38,22 @@ export function LoginPage() {
     }
     setErrors({});
     try {
-      const res = await authApi.login({ email, password });
-      login(res);
-      navigate("/dashboard");
+      console.log("[Login] Attempting login for:", email);
+      await login({ email, password });
+      console.log("[Login] Login successful, navigating to dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      setErrors({
-        form: (err as ApiError).message ?? "Invalid email or password",
+      const apiErr = err as ApiError;
+      console.error("[Login] Login failed:", {
+        message: apiErr.message,
+        status: apiErr.status,
+        raw: err,
       });
+      const message =
+        apiErr.status === 401
+          ? "Invalid email or password"
+          : (apiErr.message ?? "Something went wrong. Please try again.");
+      setErrors({ form: message });
     }
   };
 
@@ -64,11 +75,13 @@ export function LoginPage() {
           <p className="text-text-secondary mb-5 text-[13px]">
             {UI_STRINGS.LOGIN_PAGE.SIGN_IN_TO_CONTINUE}
           </p>
+
           {errors.form && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700 dark:border-red-800/30 dark:bg-red-950/30 dark:text-red-400">
               {errors.form}
             </div>
           )}
+
           <form
             onSubmit={handleSubmit}
             noValidate
@@ -102,6 +115,7 @@ export function LoginPage() {
                 <p className="text-[12px] text-red-500">{errors.email}</p>
               )}
             </div>
+
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <Label
@@ -117,28 +131,40 @@ export function LoginPage() {
                   {UI_STRINGS.LOGIN_PAGE.FORGOT_PASSWORD}
                 </button>
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setErrors((p) => ({ ...p, password: undefined }));
-                }}
-                autoComplete="current-password"
-                className={
-                  errors.password
-                    ? "border-red-400 focus-visible:ring-red-300"
-                    : ""
-                }
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrors((p) => ({ ...p, password: undefined }));
+                  }}
+                  autoComplete="current-password"
+                  className={`pr-10 ${errors.password ? "border-red-400 focus-visible:ring-red-300" : ""}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="text-text-muted hover:text-text-primary absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-[12px] text-red-500">{errors.password}</p>
               )}
             </div>
-            <Button type="submit" size="lg" className="mt-1 w-full">
-              {UI_STRINGS.BUTTONS.SIGN_IN}
+
+            <Button
+              type="submit"
+              size="lg"
+              className="mt-1 w-full"
+              disabled={isPending}
+            >
+              {isPending ? "Signing in…" : UI_STRINGS.BUTTONS.SIGN_IN}
             </Button>
           </form>
         </div>

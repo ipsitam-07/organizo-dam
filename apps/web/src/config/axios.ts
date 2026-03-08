@@ -31,6 +31,7 @@ apiClient.interceptors.response.use(
     if (status === 401) {
       clearToken();
       clearUser();
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
     }
 
     const apiError: ApiError = { message, status };

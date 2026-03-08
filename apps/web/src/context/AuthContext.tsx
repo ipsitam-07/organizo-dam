@@ -3,6 +3,7 @@ import {
   useState,
   useContext,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
 import type { User, AuthResponse } from "../interfaces";
@@ -15,12 +16,14 @@ import {
   getUserKey,
   setUserKey,
 } from "../utils/storage";
-import type { AuthContextValue, AuthState } from "../interfaces";
+import type { ExtendedAuthContextValue, AuthState } from "../interfaces";
 import { ERROR_STRINGS } from "../constants";
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const AuthContext = createContext<ExtendedAuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [isHydrating, setIsHydrating] = useState(() => !!getToken());
+
   const [state, setState] = useState<AuthState>(() => {
     try {
       const token = getToken();
@@ -31,10 +34,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
 
+  const setHydrated = useCallback(() => setIsHydrating(false), []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setState({ token: null, user: null, isAuthenticated: false });
+      setIsHydrating(false);
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () =>
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, []);
+
   const login = useCallback((r: AuthResponse) => {
     setToken(r.token);
     setUserKey(JSON.stringify(r.user));
     setState({ token: r.token, user: r.user, isAuthenticated: true });
+    setIsHydrating(false);
   }, []);
 
   const logout = useCallback(async () => {
@@ -49,7 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider
+      value={{ ...state, login, logout, isHydrating, setHydrated }}
+    >
       {children}
     </AuthContext.Provider>
   );

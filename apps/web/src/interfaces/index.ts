@@ -38,3 +38,8 @@ export interface AuthContextValue extends AuthState {
   login: (r: AuthResponse) => void;
   logout: () => Promise<void>;
 }
+
+export interface ExtendedAuthContextValue extends AuthContextValue {
+  isHydrating: boolean;
+  setHydrated: () => void;
+}
