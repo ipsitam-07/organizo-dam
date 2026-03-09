@@ -34,7 +34,7 @@ export const API_ENDPOINTS = {
 } as const;
 
 export const APP_NAME = "Organizo";
-
+export const MAX_FILES = 20;
 export const UI_STRINGS = {
   SIGN_UP_PAGE: {
     SUB_HEADING: "Digital Asset Management",
@@ -62,5 +62,20 @@ export const UI_STRINGS = {
     CREATE: "Create account",
     SIGN_IN: "Sign in",
     SIGN_UP: "Sign up",
+  },
+  UPDATE_MODAL: {
+    UPLOAD_FILE_TEXT: "Drop files here or click to browse",
+    ANY_FILE: `Any file type · Up to ${MAX_FILES} files at once`,
+    STATUS: {
+      QUEUED: "queued",
+      UPLOADING: "uploading",
+      DONE: "done",
+      ERROR: "error",
+    },
+    DONE: "Done",
+    UPLOADED: "uploaded",
+    FAILED: "failed",
+    UPLOAD_MORE: "Upload more",
+    CLOSE: "Close",
   },
 } as const;

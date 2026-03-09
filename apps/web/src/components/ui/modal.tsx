@@ -40,7 +40,7 @@ export function Modal({
       />
       <div
         className={cn(
-          "border-border bg-card animate-fade-up relative z-10 w-full rounded-xl border shadow-2xl",
+          "border-border bg-accent animate-fade-up relative z-10 w-full rounded-xl border shadow-2xl",
           size === "sm" ? "max-w-sm" : "max-w-lg"
         )}
       >

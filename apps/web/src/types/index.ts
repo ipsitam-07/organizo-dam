@@ -8,3 +8,5 @@ export type UIAction =
   | { type: "SHARE"; a: Asset }
   | { type: "DELETE"; a: Asset }
   | { type: "CLOSE" };
+
+export type FileStatus = "queued" | "uploading" | "done" | "error";

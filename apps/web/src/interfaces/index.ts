@@ -1,5 +1,6 @@
 import type { ROLE } from "../constants";
-import type { ModalKind } from "@/types";
+import type { ModalKind, FileStatus } from "@/types";
+
 export interface ApiError {
   message: string;
   status: number;
@@ -98,4 +99,12 @@ export interface CreateShareLinkPayload {
   password?: string;
   max_downloads?: number;
   expires_in_hours?: number;
+}
+
+export interface FileEntry {
+  id: string;
+  file: File;
+  status: FileStatus;
+  percent: number;
+  error?: string;
 }

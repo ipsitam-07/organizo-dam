@@ -2,42 +2,36 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/queryKeys";
 import { getToken } from "../utils/storage";
-
-export type UploadState = "idle" | "uploading" | "success" | "error";
-export interface UploadFile {
-  name: string;
-  percent: number;
-}
+import type { FileEntry } from "@/interfaces";
 
 export function useUpload() {
   const qc = useQueryClient();
-  const [state, setState] = useState<UploadState>("idle");
-  const [progress, setProgress] = useState<UploadFile | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [active, setActive] = useState(false);
 
   const reset = useCallback(() => {
-    setState("idle");
-    setProgress(null);
-    setError(null);
+    setFiles([]);
+    setActive(false);
   }, []);
 
-  const upload = useCallback(
-    async (file: File) => {
-      setState("uploading");
-      setProgress({ name: file.name, percent: 0 });
-      setError(null);
+  const updateFile = useCallback((id: string, patch: Partial<FileEntry>) => {
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  }, []);
+
+  const uploadOne = useCallback(
+    async (entry: FileEntry): Promise<void> => {
+      updateFile(entry.id, { status: "uploading", percent: 0 });
       try {
         const { Upload } = await import("tus-js-client");
         await new Promise<void>((resolve, reject) => {
-          const t = new Upload(file, {
+          const t = new Upload(entry.file, {
             endpoint: "/api/upload/core",
             retryDelays: [0, 1000, 3000, 5000],
             chunkSize: 10 * 1024 * 1024,
             headers: { Authorization: `Bearer ${getToken() ?? ""}` },
-            metadata: { filename: file.name, filetype: file.type },
+            metadata: { filename: entry.file.name, filetype: entry.file.type },
             onProgress: (sent, total) =>
-              setProgress({
-                name: file.name,
+              updateFile(entry.id, {
                 percent: Math.round((sent / total) * 100),
               }),
             onSuccess: () => resolve(),
@@ -45,15 +39,54 @@ export function useUpload() {
           });
           t.start();
         });
-        setState("success");
-        qc.invalidateQueries({ queryKey: queryKeys.assets.all() });
+        updateFile(entry.id, { status: "done", percent: 100 });
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Upload failed");
-        setState("error");
+        updateFile(entry.id, {
+          status: "error",
+          error: e instanceof Error ? e.message : "Upload failed",
+        });
       }
     },
-    [qc]
+    [updateFile]
   );
 
-  return { state, progress, error, upload, reset };
+  const uploadAll = useCallback(
+    async (selected: File[]) => {
+      const entries: FileEntry[] = selected.map((file, i) => ({
+        id: `${Date.now()}-${i}`,
+        file,
+        status: "queued",
+        percent: 0,
+      }));
+      setFiles(entries);
+      setActive(true);
+
+      // Upload sequentially
+      for (const entry of entries) {
+        await uploadOne(entry);
+      }
+
+      setActive(false);
+      qc.invalidateQueries({ queryKey: queryKeys.assets.all() });
+    },
+    [uploadOne, qc]
+  );
+
+  const allDone =
+    files.length > 0 &&
+    files.every((f) => f.status === "done" || f.status === "error");
+  const anyError = files.some((f) => f.status === "error");
+  const doneCount = files.filter((f) => f.status === "done").length;
+  const errCount = files.filter((f) => f.status === "error").length;
+
+  return {
+    files,
+    active,
+    allDone,
+    anyError,
+    doneCount,
+    errCount,
+    uploadAll,
+    reset,
+  };
 }
