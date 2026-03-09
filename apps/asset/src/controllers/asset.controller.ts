@@ -34,6 +34,23 @@ export class AssetController {
     }
   }
 
+  //thumbnail
+  async thumbnail(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const url = await assetService.getThumbnailUrl(
+        req.params.id,
+        req.user!.id
+      );
+      if (!url) {
+        res.status(404).json({ message: "Thumbnail not ready" });
+        return;
+      }
+      res.json({ url });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   //download
   async download(req: AuthRequest, res: Response, next: NextFunction) {
     try {

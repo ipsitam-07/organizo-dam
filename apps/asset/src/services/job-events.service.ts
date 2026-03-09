@@ -4,6 +4,14 @@ import { logger } from "@repo/logger";
 import type { JobCompletedPayload } from "@repo/rabbitmq";
 import { Op } from "sequelize";
 
+const REAL_JOB_TYPES = [
+  "metadata",
+  "thumbnail",
+  "transcode",
+  "image",
+  "document",
+];
+
 export async function handleJobEvent(
   payload: JobCompletedPayload,
   _msg: ConsumeMessage
@@ -33,21 +41,29 @@ export async function handleJobEvent(
     return;
   }
 
-  const pendingCount = await ProcessingJob.count({
+  const pendingRealJobs = await ProcessingJob.count({
     where: {
       asset_id: assetId,
+      job_type: { [Op.in]: REAL_JOB_TYPES },
       status: { [Op.notIn]: ["completed", "failed", "dead_lettered"] },
     },
   });
 
-  if (pendingCount === 0) {
+  const totalRealJobs = await ProcessingJob.count({
+    where: {
+      asset_id: assetId,
+      job_type: { [Op.in]: REAL_JOB_TYPES },
+    },
+  });
+
+  if (totalRealJobs > 0 && pendingRealJobs === 0) {
     await Asset.update({ status: "ready" }, { where: { id: assetId } });
     logger.info(
       `[JobEvent] Asset "${assetId}" marked READY — all jobs complete`
     );
   } else {
     logger.info(
-      `[JobEvent] Asset "${assetId}" still has ${pendingCount} pending job(s)`
+      `[JobEvent] Asset "${assetId}" — ${pendingRealJobs} pending / ${totalRealJobs} total real jobs`
     );
   }
 }

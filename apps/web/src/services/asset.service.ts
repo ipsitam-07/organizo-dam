@@ -44,6 +44,18 @@ export const assetsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(API_ENDPOINTS.ASSETS.DETAIL(id));
   },
+
+  //GET api/assets/:id/thumbnail
+  getThumbnailUrl: async (id: string): Promise<string | null> => {
+    try {
+      const { data } = await apiClient.get<{ url: string }>(
+        API_ENDPOINTS.ASSETS.THUMBNAIL(id)
+      );
+      return data.url;
+    } catch {
+      return null;
+    }
+  },
   // GET /api/assets/:id/download
   getDownloadUrl: async (id: string): Promise<string> => {
     const { data } = await apiClient.get<{ url: string }>(

@@ -49,7 +49,7 @@ export class AssetService {
       throw new ConflictError("Asset is not ready for download");
 
     let storageKey = asset.storage_key;
-    let bucket = config.minio.buckets.chunks;
+    let bucket = config.minio.buckets.assets;
     let renditionId: string | undefined;
 
     if (renditionLabel) {
@@ -77,6 +77,28 @@ export class AssetService {
     await assetRepository.incrementDownloadCount(assetId);
 
     return { url, expiresIn: 900 };
+  }
+
+  // Thumbnail presigned URL
+  async getThumbnailUrl(
+    assetId: string,
+    userId: string
+  ): Promise<string | null> {
+    const asset = await assetRepository.findByIdAndUser(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const renditions = (asset as any).AssetRenditions ?? [];
+    const thumbnail = renditions.find(
+      (r: any) => r.label === "thumbnail" && r.status === "ready"
+    );
+    if (!thumbnail) return null;
+
+    const url = await getPresignedUrl(
+      config.minio.buckets.renditions,
+      thumbnail.storage_key,
+      3600
+    );
+    return url;
   }
 
   //Tags

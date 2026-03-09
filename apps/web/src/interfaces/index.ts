@@ -52,6 +52,18 @@ export interface Tag {
   source: "user" | "auto";
 }
 
+export interface AssetRendition {
+  id: string;
+  label: string;
+  rendition_type: string;
+  storage_key: string;
+  mime_type: string;
+  width: number | null;
+  height: number | null;
+  size_bytes: number | null;
+  status: "processing" | "ready" | "failed";
+}
+
 export interface Asset {
   id: string;
   user_id: string;
@@ -65,6 +77,7 @@ export interface Asset {
   created_at: string;
   updated_at: string;
   Tags?: Tag[];
+  AssetRenditions?: AssetRendition[];
 }
 
 export interface UIState {
@@ -107,4 +120,19 @@ export interface FileEntry {
   status: FileStatus;
   percent: number;
   error?: string;
+}
+
+export interface Props {
+  asset: Asset;
+  onView: (a: Asset) => void;
+  onShare: (a: Asset) => void;
+  onDelete: (a: Asset) => void;
+  onDownload: (a: Asset) => void;
+}
+
+export interface DeleteProps {
+  asset: Asset;
+  onShare: (a: Asset) => void;
+  onDelete: (a: Asset) => void;
+  onClose: () => void;
 }

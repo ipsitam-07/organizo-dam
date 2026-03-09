@@ -19,6 +19,16 @@ const s3 = new S3Client({
   forcePathStyle: true,
 });
 
+export function rewriteToPublicUrl(url: string): string {
+  const publicBase = process.env.MINIO_PUBLIC_URL;
+  if (!publicBase) return url;
+  const internalOrigin = `http://${config.minio.endpoint}`;
+  if (url.startsWith(internalOrigin)) {
+    return publicBase.replace(/\/$/, "") + url.slice(internalOrigin.length);
+  }
+  return url;
+}
+
 export async function getPresignedUrl(
   bucket: string,
   key: string,
@@ -26,8 +36,9 @@ export async function getPresignedUrl(
 ): Promise<string> {
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
   const url = await getSignedUrl(s3, command, { expiresIn: expirySeconds });
+  const publicUrl = rewriteToPublicUrl(url);
   logger.info(`[Storage] Generated presigned URL for key="${key}"`);
-  return url;
+  return publicUrl;
 }
 
 export async function deleteObject(bucket: string, key: string): Promise<void> {

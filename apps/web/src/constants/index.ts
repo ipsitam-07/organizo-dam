@@ -1,3 +1,4 @@
+import type { AssetStatus } from "@/interfaces";
 //STORAGE
 
 export const STORAGE_TOKENS = {
@@ -29,6 +30,7 @@ export const API_ENDPOINTS = {
     TAGS: (id: string) => `/assets/${id}/tags`,
     TAG: (id: string, tid: string) => `/assets/${id}/tags/${tid}`,
     SHARE: (id: string) => `/assets/${id}/share`,
+    THUMBNAIL: (id: string) => `/assets/${id}/thumbnail`,
   },
   UPLOAD: { TUS: "/upload" },
 } as const;
@@ -78,4 +80,55 @@ export const UI_STRINGS = {
     UPLOAD_MORE: "Upload more",
     CLOSE: "Close",
   },
+
+  DELETE_MODAL: {
+    DELETE: "Permanently delete this asset?",
+    WARNING: "will be removed from storage. This cannot be undone.",
+    CANCEL: "Cancel",
+    DLT_BUTTON: "Delete",
+    DELETING: "Deleting...",
+    FAILED: "Failed",
+  },
+  DETAIL_MODAL: {
+    TAGS: "Tags",
+    DOWNLOAD: "Download",
+    SHARE: "Share",
+    DELETE: "Delete",
+  },
+  SHARE_MODAL: {
+    HEADING: "Share link created. Copy and send it.",
+    COPIED: "Copied!",
+    COPY: "Copy link",
+    SHARE: "Share",
+    OPTIONAL: "All options are optional.",
+    EXPIRE: "Expires (hours)",
+    DOWNLOADS: "Max downloads",
+    PASSWORD: "Password (optional)",
+    CANCEL: "Cancel",
+    CREATING: "Creating…",
+    LINK: "Create link",
+  },
+} as const;
+
+export const MIME_COLORS: Record<string, string> = {
+  Image: "from-violet-900/40 to-violet-950/20 text-violet-300",
+  Video: "from-blue-900/40 to-blue-950/20 text-blue-300",
+  Audio: "from-pink-900/40 to-pink-950/20 text-pink-300",
+  PDF: "from-red-900/40 to-red-950/20 text-red-300",
+  Sheet: "from-emerald-900/40 to-emerald-950/20 text-emerald-300",
+  Doc: "from-sky-900/40 to-sky-950/20 text-sky-300",
+} as const;
+
+export const STATUS_DOT: Record<AssetStatus, string> = {
+  ready: "bg-primary",
+  processing: "bg-amber-400 animate-pulse",
+  queued: "bg-blue-400 animate-pulse",
+  failed: "bg-destructive",
+} as const;
+
+export const STATUS_STYLE: Record<AssetStatus, string> = {
+  ready: "text-primary border-primary/30 bg-primary/10",
+  processing: "text-amber-400 border-amber-400/30 bg-amber-400/10",
+  queued: "text-blue-400 border-blue-400/30 bg-blue-400/10",
+  failed: "text-destructive border-destructive/30 bg-destructive/10",
 } as const;

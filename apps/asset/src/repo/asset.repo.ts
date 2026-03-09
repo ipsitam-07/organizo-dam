@@ -38,7 +38,25 @@ export class AssetRepository {
 
     const { rows, count } = await Asset.findAndCountAll({
       where,
-      include: [tagInclude],
+      include: [
+        tagInclude,
+        {
+          model: AssetRendition,
+          attributes: [
+            "id",
+            "label",
+            "rendition_type",
+            "storage_key",
+            "mime_type",
+            "width",
+            "height",
+            "size_bytes",
+            "status",
+          ],
+          where: { label: "thumbnail", status: "ready" },
+          required: false,
+        },
+      ],
       limit,
       offset,
       order: [["created_at", "DESC"]],

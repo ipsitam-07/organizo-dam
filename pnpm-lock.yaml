@@ -339,9 +339,6 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@19.2.14)(react@19.2.0)
-      '@repo/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.2.1(vite@7.3.1(@types/node@24.10.13)(jiti@1.21.7)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2))
@@ -378,6 +375,9 @@ importers:
       tailwindcss-theme-variants:
         specifier: 2.0.0-beta.0
         version: 2.0.0-beta.0(tsx@4.21.0)(yaml@2.8.2)
+      tus-js-client:
+        specifier: ^4.3.1
+        version: 4.3.1
     devDependencies:
       '@commitlint/config-conventional':
         specifier: latest
