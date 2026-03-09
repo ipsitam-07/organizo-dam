@@ -110,7 +110,6 @@ function AssetPreview({ asset }: PreviewProps) {
     (isImage || isVideo || isAudio || isPdf) && asset.status === "ready";
 
   const [renditions, setRenditions] = useState<AssetRenditionWithUrl[]>([]);
-  const [renditionsLoading, setRenditionsLoading] = useState(false);
 
   const videoRenditions = sortVideoRenditions(
     renditions.filter(
@@ -121,19 +120,21 @@ function AssetPreview({ asset }: PreviewProps) {
     useState<AssetRenditionWithUrl | null>(null);
 
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
-  const [originalLoading, setOriginalLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!canPreview) return;
     setError(false);
-
+    setLoading(true);
     if (isVideo) {
-      setRenditionsLoading(true);
-      assetsApi
-        .getRenditions(asset.id)
-        .then((rs) => {
+      Promise.all([
+        assetsApi.getRenditions(asset.id),
+        assetsApi.getDownloadUrl(asset.id),
+      ])
+        .then(([rs, origUrl]) => {
           setRenditions(rs);
+          setOriginalUrl(origUrl);
           const sorted = sortVideoRenditions(
             rs.filter(
               (r) => r.rendition_type === "video" && r.status === "ready"
@@ -142,14 +143,13 @@ function AssetPreview({ asset }: PreviewProps) {
           if (sorted.length > 0) setSelectedVideo(sorted[0]);
         })
         .catch(() => setError(true))
-        .finally(() => setRenditionsLoading(false));
+        .finally(() => setLoading(false));
     } else {
-      setOriginalLoading(true);
       assetsApi
         .getDownloadUrl(asset.id)
         .then(setOriginalUrl)
         .catch(() => setError(true))
-        .finally(() => setOriginalLoading(false));
+        .finally(() => setLoading(false));
     }
   }, [asset.id, canPreview, isVideo]);
 
@@ -175,7 +175,7 @@ function AssetPreview({ asset }: PreviewProps) {
     );
   }
 
-  if (renditionsLoading || originalLoading) {
+  if (loading) {
     return (
       <div className="border-border bg-muted/30 flex h-40 items-center justify-center rounded-lg border">
         <div className="border-muted-foreground h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
