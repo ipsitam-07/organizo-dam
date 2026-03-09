@@ -6,8 +6,12 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY apps/web/package.json ./apps/web/package.json
+COPY apps/asset/package.json ./apps/asset/package.json
+COPY apps/auth/package.json ./apps/auth/package.json
+COPY apps/upload/package.json ./apps/upload/package.json
+COPY apps/workers/package.json ./apps/workers/package.json
 
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 EXPOSE 5173
 

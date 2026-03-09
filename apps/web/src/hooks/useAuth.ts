@@ -68,6 +68,7 @@ export const useRegister = () => {
     },
     onSuccess: (data) => {
       console.log("[Auth] onSuccess: updating auth context, user:", data.user);
+      queryClient.clear();
       login(data);
       queryClient.invalidateQueries();
     },
@@ -88,6 +89,7 @@ export const useLogin = () => {
     },
     onSuccess: (data) => {
       console.log("[Auth] onSuccess: updating auth context, user:", data.user);
+      queryClient.clear();
       login(data);
       queryClient.invalidateQueries();
     },
@@ -104,8 +106,8 @@ export const useLogout = () => {
 
   return useCallback(async () => {
     console.log("[Auth] Logging out");
-    await logout();
     queryClient.clear();
+    await logout();
     navigate("/login", { replace: true });
   }, [logout, queryClient, navigate]);
 };

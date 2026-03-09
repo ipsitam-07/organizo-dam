@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
     TAG: (id: string, tid: string) => `/assets/${id}/tags/${tid}`,
     SHARE: (id: string) => `/assets/${id}/share`,
     THUMBNAIL: (id: string) => `/assets/${id}/thumbnail`,
+    RENDITIONS: (id: string) => `/assets/${id}/renditions`,
   },
   UPLOAD: { TUS: "/upload" },
 } as const;

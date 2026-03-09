@@ -7,6 +7,7 @@ import type {
   ShareLink,
   CreateShareLinkPayload,
   Tag,
+  AssetRenditionWithUrl,
 } from "../interfaces";
 
 export const assetsApi = {
@@ -56,10 +57,19 @@ export const assetsApi = {
       return null;
     }
   },
+
+  // GET /api/assets/:id/renditions
+  getRenditions: async (id: string): Promise<AssetRenditionWithUrl[]> => {
+    const { data } = await apiClient.get<{ data: AssetRenditionWithUrl[] }>(
+      API_ENDPOINTS.ASSETS.RENDITIONS(id)
+    );
+    return data.data;
+  },
   // GET /api/assets/:id/download
-  getDownloadUrl: async (id: string): Promise<string> => {
+  getDownloadUrl: async (id: string, rendition?: string): Promise<string> => {
     const { data } = await apiClient.get<{ url: string }>(
-      API_ENDPOINTS.ASSETS.DOWNLOAD(id)
+      API_ENDPOINTS.ASSETS.DOWNLOAD(id),
+      rendition ? { params: { rendition } } : undefined
     );
     return data.url;
   },

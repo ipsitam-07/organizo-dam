@@ -83,6 +83,31 @@ export class AssetRepository {
     });
   }
 
+  async findRenditions(id: string, userId: string) {
+    const asset = await Asset.findOne({
+      where: { id, user_id: userId },
+      attributes: ["id", "status"],
+      include: [
+        {
+          model: AssetRendition,
+          attributes: [
+            "id",
+            "label",
+            "rendition_type",
+            "mime_type",
+            "width",
+            "height",
+            "size_bytes",
+            "status",
+          ],
+          where: { status: "ready" },
+          required: false,
+        },
+      ],
+    });
+    return asset;
+  }
+
   async findById(id: string) {
     return Asset.findByPk(id);
   }

@@ -64,6 +64,18 @@ export interface AssetRendition {
   status: "processing" | "ready" | "failed";
 }
 
+export interface AssetRenditionWithUrl {
+  id: string;
+  label: string;
+  rendition_type: string;
+  mime_type: string;
+  width: number | null;
+  height: number | null;
+  size_bytes: number | null;
+  status: "processing" | "ready" | "failed";
+  url: string;
+}
+
 export interface Asset {
   id: string;
   user_id: string;
@@ -143,4 +155,25 @@ export interface ListViewProps {
   onShare: (a: Asset) => void;
   onDelete: (a: Asset) => void;
   onDownload: (a: Asset) => void;
+}
+
+export interface DetailProps {
+  asset: Asset;
+  onShare: (a: Asset) => void;
+  onDelete: (a: Asset) => void;
+  onClose: () => void;
+}
+
+export interface DownloadPickerProps {
+  asset: Asset;
+}
+
+export interface QualityPickerProps {
+  options: AssetRenditionWithUrl[];
+  selected: AssetRenditionWithUrl;
+  onSelect: (r: AssetRenditionWithUrl) => void;
+}
+
+export interface PreviewProps {
+  asset: Asset;
 }

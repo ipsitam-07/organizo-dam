@@ -6,10 +6,7 @@ export function useCardThumbnail(asset: Asset) {
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const thumb = asset.AssetRenditions?.find(
-      (r) => r.label === "thumbnail" && r.status === "ready"
-    );
-    if (!thumb || asset.status !== "ready") {
+    if (asset.status !== "ready") {
       setUrl(null);
       return;
     }
@@ -21,7 +18,7 @@ export function useCardThumbnail(asset: Asset) {
     return () => {
       cancelled = true;
     };
-  }, [asset.id, asset.status, asset.AssetRenditions]);
+  }, [asset.id, asset.status]);
 
   return url;
 }

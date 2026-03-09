@@ -51,6 +51,19 @@ export class AssetController {
     }
   }
 
+  //renditions
+  async renditions(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await assetService.getRenditions(
+        req.params.id,
+        req.user!.id
+      );
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   //download
   async download(req: AuthRequest, res: Response, next: NextFunction) {
     try {

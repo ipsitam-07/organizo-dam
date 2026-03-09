@@ -101,6 +101,39 @@ export class AssetService {
     return url;
   }
 
+  // Returns all ready renditions
+  async getRenditions(assetId: string, userId: string) {
+    const asset = await assetRepository.findRenditions(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const renditions = (asset as any).AssetRenditions ?? [];
+
+    const withUrls = await Promise.all(
+      renditions
+        .filter((r: any) => r.storage_key)
+        .map(async (r: any) => {
+          const url = await getPresignedUrl(
+            config.minio.buckets.renditions,
+            r.storage_key,
+            3600
+          );
+          return {
+            id: r.id,
+            label: r.label,
+            rendition_type: r.rendition_type,
+            mime_type: r.mime_type,
+            width: r.width,
+            height: r.height,
+            size_bytes: r.size_bytes,
+            status: r.status,
+            url,
+          };
+        })
+    );
+
+    return withUrls;
+  }
+
   //Tags
   async addTag(assetId: string, userId: string, tagName: string) {
     const asset = await assetRepository.findByIdAndUser(assetId, userId);

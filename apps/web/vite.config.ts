@@ -24,12 +24,12 @@ export default defineConfig(({ mode }) => {
           target: "http://upload:3002",
           changeOrigin: true,
         },
-        "/api/asset": {
+        "/api/assets": {
           target: "http://asset:3003",
           changeOrigin: true,
         },
         "/api/share": {
-          target: "http://asset:3000",
+          target: "http://asset:3003",
           changeOrigin: true,
         },
       },

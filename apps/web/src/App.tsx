@@ -10,6 +10,7 @@ import { SignUpPage } from "./components/pages/SignUp";
 import { LoginPage } from "./components/pages/Login";
 import { Dashboard } from "./components/pages/Dashboard";
 import { useBootstrapAuth } from "./hooks/useAuth";
+import { Toaster } from "./components/ui/sonner";
 
 function AppRoutes() {
   useBootstrapAuth();
@@ -50,6 +51,19 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 4000,
+              classNames: {
+                toast: "!bg-card !border-border !text-foreground !shadow-lg",
+                title: "!text-foreground !text-sm !font-medium",
+                description: "!text-muted-foreground !text-xs",
+                success: "!border-primary/20",
+                error: "!border-destructive/20",
+              },
+            }}
+          />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
