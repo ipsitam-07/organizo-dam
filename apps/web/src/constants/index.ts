@@ -108,6 +108,19 @@ export const UI_STRINGS = {
     CREATING: "Creating…",
     LINK: "Create link",
   },
+  DASHBOARD: {
+    UPLOAD: "Upload",
+    ASSET: "asset",
+    PREVIOUS: "Previous",
+    PAGE: "Page",
+    OF: "of",
+    NEXT: "Next",
+    NO_RESULT: "No results",
+    SEARCH_TERM: "Try a different search term.",
+    NO_ASSETS: "No assets yet",
+    FIRST_FILE: "Upload your first file to get started.",
+    UPLOAD_FILE: "Upload file",
+  },
 } as const;
 
 export const MIME_COLORS: Record<string, string> = {

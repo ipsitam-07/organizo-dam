@@ -136,3 +136,11 @@ export interface DeleteProps {
   onDelete: (a: Asset) => void;
   onClose: () => void;
 }
+
+export interface ListViewProps {
+  assets: Asset[];
+  onView: (a: Asset) => void;
+  onShare: (a: Asset) => void;
+  onDelete: (a: Asset) => void;
+  onDownload: (a: Asset) => void;
+}
