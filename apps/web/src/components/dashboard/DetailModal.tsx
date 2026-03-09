@@ -71,7 +71,7 @@ function QualityPicker({ options, selected, onSelect }: QualityPickerProps) {
       </button>
 
       {open && (
-        <div className="border-border bg-card absolute top-full right-0 z-20 mt-1 min-w-[140px] rounded-lg border py-1 shadow-xl">
+        <div className="border-border bg-card absolute top-full right-0 z-20 mt-1 min-w-35 rounded-lg border py-1 shadow-xl">
           {options.map((r) => (
             <button
               key={r.id}
@@ -165,7 +165,9 @@ function AssetPreview({ asset }: PreviewProps) {
           ) : (
             <>
               <Archive size={28} strokeWidth={1.5} />
-              <span className="text-xs">No preview available</span>
+              <span className="text-xs">
+                {UI_STRINGS.DETAIL_MODAL.NO_PREVIEW}
+              </span>
             </>
           )}
         </div>
@@ -185,7 +187,7 @@ function AssetPreview({ asset }: PreviewProps) {
     return (
       <div className="border-border bg-muted/30 flex h-40 items-center justify-center rounded-lg border">
         <span className="text-muted-foreground text-xs">
-          Preview unavailable
+          {UI_STRINGS.DETAIL_MODAL.PREVIEW_UNAVAILABLE}
         </span>
       </div>
     );
@@ -196,7 +198,7 @@ function AssetPreview({ asset }: PreviewProps) {
       return (
         <div className="border-border overflow-hidden rounded-lg border bg-black">
           <p className="text-muted-foreground px-3 py-2 text-center text-[10px]">
-            Transcoding in progress — playing original
+            {UI_STRINGS.DETAIL_MODAL.TRANSCODING_IN_PROGRESS}
           </p>
           {originalUrl ? (
             <video
@@ -219,8 +221,9 @@ function AssetPreview({ asset }: PreviewProps) {
       <div className="border-border overflow-hidden rounded-lg border bg-black">
         <div className="flex items-center justify-between bg-black/60 px-3 py-1.5 backdrop-blur-sm">
           <span className="text-muted-foreground text-[10px]">
-            {videoRenditions.length} quality option
-            {videoRenditions.length !== 1 ? "s" : ""} available
+            {videoRenditions.length} {UI_STRINGS.DETAIL_MODAL.QUALITY_OPTION}
+            {videoRenditions.length !== 1 ? "s" : ""}{" "}
+            {UI_STRINGS.DETAIL_MODAL.AVAILABLE}
           </span>
           {selectedVideo && (
             <QualityPicker
@@ -353,7 +356,9 @@ function DownloadButton({ asset }: DownloadPickerProps) {
         }}
       >
         <Download size={12} />
-        {loading ? "Loading…" : "Download"}
+        {loading
+          ? UI_STRINGS.DETAIL_MODAL.LOADING
+          : UI_STRINGS.DETAIL_MODAL.DOWNLOAD}
       </Button>
     );
   }
@@ -365,7 +370,7 @@ function DownloadButton({ asset }: DownloadPickerProps) {
         disabled={asset.status !== "ready"}
         onClick={fetchRenditions}
       >
-        <Download size={12} /> Download
+        <Download size={12} /> {UI_STRINGS.DETAIL_MODAL.DOWNLOAD}
         <ChevronDown
           size={11}
           className={cn("ml-0.5 transition-transform", open && "rotate-180")}
@@ -373,15 +378,17 @@ function DownloadButton({ asset }: DownloadPickerProps) {
       </Button>
 
       {open && (
-        <div className="border-border bg-card absolute top-full left-0 z-20 mt-1 min-w-[180px] rounded-lg border py-1 shadow-xl">
+        <div className="border-border bg-card absolute top-full left-0 z-20 mt-1 min-w-45 rounded-lg border py-1 shadow-xl">
           <p className="text-muted-foreground px-3 py-1.5 text-[10px] font-medium tracking-widest uppercase">
-            Original
+            {UI_STRINGS.DETAIL_MODAL.ORIGINAL}
           </p>
           <button
             onClick={() => doDownload()}
             className="hover:bg-accent flex w-full items-center justify-between gap-3 px-3 py-1.5 text-[11px] transition-colors"
           >
-            <span className="text-foreground font-medium">Original file</span>
+            <span className="text-foreground font-medium">
+              {UI_STRINGS.DETAIL_MODAL.ORIGINAL} {UI_STRINGS.DETAIL_MODAL.FILE}
+            </span>
             <span className="text-muted-foreground">
               {formatBytes(asset.size_bytes)}
             </span>
@@ -391,7 +398,7 @@ function DownloadButton({ asset }: DownloadPickerProps) {
             <>
               <div className="border-border mx-3 my-1 border-t" />
               <p className="text-muted-foreground px-3 py-1.5 text-[10px] font-medium tracking-widest uppercase">
-                Transcoded
+                {UI_STRINGS.DETAIL_MODAL.TRANSCODED}
               </p>
               {videoRenditions.map((r) => (
                 <button
