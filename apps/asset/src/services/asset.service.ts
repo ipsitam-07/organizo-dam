@@ -49,7 +49,7 @@ export class AssetService {
       throw new ConflictError("Asset is not ready for download");
 
     let storageKey = asset.storage_key;
-    let bucket = config.minio.buckets.chunks;
+    let bucket = config.minio.buckets.assets;
     let renditionId: string | undefined;
 
     if (renditionLabel) {
@@ -77,6 +77,61 @@ export class AssetService {
     await assetRepository.incrementDownloadCount(assetId);
 
     return { url, expiresIn: 900 };
+  }
+
+  // Thumbnail presigned URL
+  async getThumbnailUrl(
+    assetId: string,
+    userId: string
+  ): Promise<string | null> {
+    const asset = await assetRepository.findByIdAndUser(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const renditions = (asset as any).AssetRenditions ?? [];
+    const thumbnail = renditions.find(
+      (r: any) => r.label === "thumbnail" && r.status === "ready"
+    );
+    if (!thumbnail) return null;
+
+    const url = await getPresignedUrl(
+      config.minio.buckets.renditions,
+      thumbnail.storage_key,
+      3600
+    );
+    return url;
+  }
+
+  // Returns all ready renditions
+  async getRenditions(assetId: string, userId: string) {
+    const asset = await assetRepository.findRenditions(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const renditions = (asset as any).AssetRenditions ?? [];
+
+    const withUrls = await Promise.all(
+      renditions
+        .filter((r: any) => r.storage_key)
+        .map(async (r: any) => {
+          const url = await getPresignedUrl(
+            config.minio.buckets.renditions,
+            r.storage_key,
+            3600
+          );
+          return {
+            id: r.id,
+            label: r.label,
+            rendition_type: r.rendition_type,
+            mime_type: r.mime_type,
+            width: r.width,
+            height: r.height,
+            size_bytes: r.size_bytes,
+            status: r.status,
+            url,
+          };
+        })
+    );
+
+    return withUrls;
   }
 
   //Tags

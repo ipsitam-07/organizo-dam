@@ -22,6 +22,8 @@ app.use(
 );
 app.use(express.json());
 
+app.set("trust proxy", 1);
+
 //Request logging
 app.use((req, _res, next) => {
   logger.info(`[${req.method}] ${req.path}`);

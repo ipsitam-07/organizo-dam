@@ -23,6 +23,8 @@ app.use(
 );
 app.use(express.json());
 
+app.set("trust proxy", 1);
+
 //Request logging
 app.use((req, _res, next) => {
   logger.info(`[${req.method}] ${req.path}`);
@@ -34,14 +36,12 @@ app.get("/health/upload", (_req, res) => {
   res.status(200).send("OK");
 });
 
-//Routes
-app.use("/api/upload", uploadLimiter, uploadRoutes);
-
 export function createTusServer() {
   const tusServer = new Server({
     path: "/api/upload/core",
+    relativeLocation: true,
     datastore: new S3Store({
-      partSize: 5 * 1024 * 1024,
+      partSize: 10 * 1024 * 1024,
 
       s3ClientConfig: {
         endpoint: `http://${config.minio.endpoint}`,
@@ -92,8 +92,8 @@ export function createTusServer() {
     },
   });
 
-  //TUS Server routes
   app.all("/api/upload/core", requireAuth, tusServer.handle.bind(tusServer));
+  app.all("/api/upload/core/", requireAuth, tusServer.handle.bind(tusServer));
   app.all("/api/upload/core/*", requireAuth, tusServer.handle.bind(tusServer));
 
   return tusServer;
@@ -113,8 +113,6 @@ const startServer = async () => {
       logging: config.env === "development",
     });
 
-    createTusServer();
-
     app.listen(config.ports.upload, () => {
       logger.info(`[Upload Service] Listening on port ${config.ports.upload}`);
     });
@@ -124,5 +122,9 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+createTusServer();
+
+app.use("/api/upload", uploadLimiter, uploadRoutes);
 
 startServer();

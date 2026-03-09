@@ -22,6 +22,12 @@ router.delete("/:id", assetController.removeAsset.bind(assetController));
 // GET /api/assets/:id/download?rendition=label
 router.get("/:id/download", assetController.download.bind(assetController));
 
+// GET /api/assets/:id/thumbnail
+router.get("/:id/thumbnail", assetController.thumbnail.bind(assetController));
+
+// GET /api/assets/:id/renditions
+router.get("/:id/renditions", assetController.renditions.bind(assetController));
+
 // POST /api/assets/:id/tags
 router.post(
   "/:id/tags",

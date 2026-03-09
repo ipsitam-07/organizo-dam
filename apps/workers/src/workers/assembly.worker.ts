@@ -127,4 +127,8 @@ export class AssemblyWorker extends BaseWorker {
     await Promise.all(publishTasks);
     logger.info(`[AssemblyWorker] Fan-out complete for asset="${assetId}"`);
   }
+
+  protected async publishResult(): Promise<void> {
+    // intentional no-op
+  }
 }
