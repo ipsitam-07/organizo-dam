@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Download,
   Share2,
@@ -7,7 +8,6 @@ import {
   Music,
   Archive,
   ChevronDown,
-  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,67 +40,128 @@ function sortVideoRenditions(renditions: AssetRenditionWithUrl[]) {
 
 function QualityPicker({ options, selected, onSelect }: QualityPickerProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const onSelectRef = useRef(onSelect);
+  const [rect, setRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
+  const openDropdown = () => {
+    if (triggerRef.current) {
+      setRect(triggerRef.current.getBoundingClientRect());
+    }
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
+      if (
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
+
+  const dropdown =
+    open && rect
+      ? createPortal(
+          <div
+            style={{
+              position: "fixed",
+              top: rect.bottom + 6,
+              right: window.innerWidth - rect.right,
+            }}
+            className="border-white/8#0d1f16]/90 z-9999 min-w-38 overflow-hidden rounded-xl border shadow-2xl backdrop-blur-2xl"
+          >
+            <div className="border-b border-white/[0.07] px-3 py-2">
+              <p className="text-[9px] font-semibold tracking-[0.12em] text-white/35 uppercase">
+                Quality
+              </p>
+            </div>
+            {options.map((r) => {
+              const isSelected = r.id === selected.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => {
+                    onSelect(r);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 px-3 py-2.5 text-[11px] transition-colors",
+                    isSelected
+                      ? "bg-primary/10 text-primary"
+                      : "text-white/70 hover:bg-white/6 hover:text-white"
+                  )}
+                >
+                  {/* Radio dot */}
+                  <span
+                    className={cn(
+                      "flex h-3 w-3 shrink-0 items-center justify-center rounded-full border",
+                      isSelected ? "border-primary" : "border-white/25"
+                    )}
+                  >
+                    {isSelected && (
+                      <span className="bg-primary h-1.5 w-1.5 rounded-full" />
+                    )}
+                  </span>
+                  <span className="flex-1 text-left font-semibold tracking-wide">
+                    {r.label}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[10px] tabular-nums",
+                      isSelected ? "text-primary/60" : "text-white/30"
+                    )}
+                  >
+                    {r.size_bytes
+                      ? formatBytes(r.size_bytes)
+                      : r.height
+                        ? `${r.height}p`
+                        : ""}
+                  </span>
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="border-border bg-muted/50 text-foreground hover:bg-muted flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors"
+        ref={triggerRef}
+        onClick={openDropdown}
+        className={cn(
+          "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold tracking-wide",
+          "border border-white/15 bg-white/8 text-white/90",
+          "ring-0 outline-none focus:outline-none focus-visible:ring-0",
+          "transition-colors hover:border-white/25 hover:bg-white/15",
+          open && "border-white/25 bg-white/15"
+        )}
       >
         {selected.label}
-        {selected.height && (
-          <span className="text-muted-foreground">· {selected.height}p</span>
-        )}
         <ChevronDown
-          size={11}
+          size={10}
           className={cn(
-            "text-muted-foreground transition-transform",
+            "text-white/50 transition-transform duration-150",
             open && "rotate-180"
           )}
         />
       </button>
-
-      {open && (
-        <div className="border-border bg-card absolute top-full right-0 z-20 mt-1 min-w-35 rounded-lg border py-1 shadow-xl">
-          {options.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => {
-                onSelect(r);
-                setOpen(false);
-              }}
-              className="hover:bg-accent flex w-full items-center justify-between gap-3 px-3 py-1.5 text-[11px] transition-colors"
-            >
-              <span className="text-foreground font-medium">{r.label}</span>
-              <span className="text-muted-foreground">
-                {r.size_bytes
-                  ? formatBytes(r.size_bytes)
-                  : r.height
-                    ? `${r.height}p`
-                    : ""}
-              </span>
-              {r.id === selected.id && (
-                <Check size={10} className="text-primary shrink-0" />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      {dropdown}
+    </>
   );
 }
 
-// asset preview
+// Asset preview
 function AssetPreview({ asset }: PreviewProps) {
   const isImage = asset.mime_type.startsWith("image/");
   const isVideo = asset.mime_type.startsWith("video/");
@@ -110,18 +171,17 @@ function AssetPreview({ asset }: PreviewProps) {
     (isImage || isVideo || isAudio || isPdf) && asset.status === "ready";
 
   const [renditions, setRenditions] = useState<AssetRenditionWithUrl[]>([]);
+  const [selectedVideo, setSelectedVideo] =
+    useState<AssetRenditionWithUrl | null>(null);
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   const videoRenditions = sortVideoRenditions(
     renditions.filter(
       (r) => r.rendition_type === "video" && r.status === "ready"
     )
   );
-  const [selectedVideo, setSelectedVideo] =
-    useState<AssetRenditionWithUrl | null>(null);
-
-  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!canPreview) return;
@@ -196,11 +256,14 @@ function AssetPreview({ asset }: PreviewProps) {
   if (isVideo) {
     if (videoRenditions.length === 0) {
       return (
-        <div className="border-border overflow-hidden rounded-lg border bg-black">
-          <p className="text-muted-foreground px-3 py-2 text-center text-[10px]">
-            {UI_STRINGS.DETAIL_MODAL.TRANSCODING_IN_PROGRESS}
-          </p>
-          {originalUrl ? (
+        <div className="overflow-hidden rounded-lg bg-black">
+          <div className="flex items-center gap-2 bg-white/4 px-3 py-2">
+            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400/80" />
+            <p className="text-[10px] text-white/40">
+              {UI_STRINGS.DETAIL_MODAL.TRANSCODING_IN_PROGRESS}
+            </p>
+          </div>
+          {originalUrl && (
             <video
               key={originalUrl}
               src={originalUrl}
@@ -208,19 +271,15 @@ function AssetPreview({ asset }: PreviewProps) {
               className="max-h-64 w-full"
               preload="metadata"
             />
-          ) : (
-            <div className="flex h-32 items-center justify-center">
-              <div className="border-muted-foreground h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
-            </div>
           )}
         </div>
       );
     }
 
     return (
-      <div className="border-border overflow-hidden rounded-lg border bg-black">
-        <div className="flex items-center justify-between bg-black/60 px-3 py-1.5 backdrop-blur-sm">
-          <span className="text-muted-foreground text-[10px]">
+      <div className="overflow-hidden rounded-lg bg-black">
+        <div className="flex items-center justify-between bg-black/50 px-3 py-2 backdrop-blur-sm">
+          <span className="text-[10px] text-white/35">
             {videoRenditions.length} {UI_STRINGS.DETAIL_MODAL.QUALITY_OPTION}
             {videoRenditions.length !== 1 ? "s" : ""}{" "}
             {UI_STRINGS.DETAIL_MODAL.AVAILABLE}
@@ -235,7 +294,7 @@ function AssetPreview({ asset }: PreviewProps) {
         </div>
         {selectedVideo && (
           <video
-            key={selectedVideo.url}
+            key={selectedVideo.id}
             src={selectedVideo.url}
             controls
             className="max-h-64 w-full"
@@ -320,7 +379,6 @@ function DownloadButton({ asset }: DownloadPickerProps) {
       setRenditions(rs);
       setOpen(true);
     } catch {
-      // fall through
       await doDownload();
     } finally {
       setLoading(false);

@@ -94,6 +94,7 @@ export class AssetRepository {
             "id",
             "label",
             "rendition_type",
+            "storage_key",
             "mime_type",
             "width",
             "height",
