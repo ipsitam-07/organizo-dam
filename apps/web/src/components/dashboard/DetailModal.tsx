@@ -41,6 +41,7 @@ function sortVideoRenditions(renditions: AssetRenditionWithUrl[]) {
 function QualityPicker({ options, selected, onSelect }: QualityPickerProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
@@ -58,11 +59,12 @@ function QualityPicker({ options, selected, onSelect }: QualityPickerProps) {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (
-        triggerRef.current &&
-        !triggerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
+        (triggerRef.current &&
+          !triggerRef.current.contains(e.target as Node)) ||
+        dropdownRef.current?.contains(e.target as Node)
+      )
+        return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -72,6 +74,7 @@ function QualityPicker({ options, selected, onSelect }: QualityPickerProps) {
     open && rect
       ? createPortal(
           <div
+            ref={dropdownRef}
             style={{
               position: "fixed",
               top: rect.bottom + 6,
