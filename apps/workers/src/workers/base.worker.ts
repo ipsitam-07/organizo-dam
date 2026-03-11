@@ -9,6 +9,11 @@ import {
 import { Asset, ProcessingJob, initDb } from "@repo/database";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
+import {
+  jobProcessedTotal,
+  jobProcessingTimeSeconds,
+  jobErrorsTotal,
+} from "../metric";
 
 // BaseWorker
 
@@ -120,8 +125,17 @@ export abstract class BaseWorker {
       { where: { id: assetId, status: "queued" } }
     );
 
+    const stopTimer = jobProcessingTimeSeconds.startTimer({
+      worker_type: this.jobType,
+    });
     try {
       await this.process(payload, job);
+
+      stopTimer();
+      jobProcessedTotal.inc({
+        worker_type: this.jobType,
+      });
+
       await job.update({
         status: "completed",
         progress: 100,
@@ -130,6 +144,9 @@ export abstract class BaseWorker {
       await this.publishResult(assetId, job.id, "completed");
       logger.info(`[${this.workerName}] Done for asset="${assetId}"`);
     } catch (err: any) {
+      stopTimer();
+      jobErrorsTotal.inc({ worker_type: this.jobType });
+
       logger.error(`[${this.workerName}] Failed for asset="${assetId}"`, {
         error: err.message,
       });
