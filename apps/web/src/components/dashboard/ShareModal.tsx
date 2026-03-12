@@ -4,8 +4,8 @@ import { useCreateShareLink } from "@/hooks/useCreateShareLink";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Asset } from "@/interfaces";
-import { UI_STRINGS } from "@/constants";
+import type { Asset } from "@/types/asset.types";
+import { UI_STRINGS } from "@/constants/ui.constants";
 
 export function ShareModal({
   asset,

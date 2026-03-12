@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, type ReactNode } from "react";
-import type { Asset, UIState } from "@/interfaces";
+import type { UIState } from "@/types";
+import type { Asset } from "@/types/asset.types";
 import type { UIAction } from "@/types";
 
 function reducer(_s: UIState, a: UIAction): UIState {

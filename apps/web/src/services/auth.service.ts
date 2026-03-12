@@ -1,11 +1,11 @@
 import { apiClient } from "../config/axios";
 import type {
+  RegisterPayload,
   AuthResponse,
   LoginPayload,
-  RegisterPayload,
   User,
-} from "../interfaces";
-import { API_ENDPOINTS } from "../constants";
+} from "@/types/auth.types";
+import { API_ENDPOINTS } from "@/constants/api.constants";
 
 export const authApi = {
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
