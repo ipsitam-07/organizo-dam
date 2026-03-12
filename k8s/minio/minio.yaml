@@ -16,7 +16,6 @@ spec:
         app: minio
     spec:
       initContainers:
-        # Create the required buckets after MinIO starts
         - name: minio-init
           image: minio/mc:latest
           command:
