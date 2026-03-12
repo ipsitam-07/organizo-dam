@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import type { ApiError } from "../interfaces";
+import type { ApiError } from "@/types";
 import { getToken, clearToken, clearUser } from "../utils/storage";
 
 export const apiClient = axios.create({

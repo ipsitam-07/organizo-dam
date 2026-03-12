@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/queryKeys";
 import { getToken } from "../utils/storage";
-import type { FileEntry } from "@/interfaces";
+import type { FileEntry } from "@/types";
 
 export function useUpload() {
   const qc = useQueryClient();

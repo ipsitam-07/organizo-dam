@@ -1,4 +1,5 @@
-import type { AssetListParams } from "@/interfaces";
+import type { AssetListParams } from "@/types/asset.types";
+
 export const queryKeys = {
   auth: {
     me: () => ["auth", "me"] as const,

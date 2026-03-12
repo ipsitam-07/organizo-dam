@@ -2,8 +2,8 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useDeleteAsset } from "@/hooks/useDeleteAsset";
 import { Button } from "@/components/ui/button";
-import type { Asset } from "@/interfaces";
-import { UI_STRINGS } from "@/constants";
+import type { Asset } from "@/types/asset.types";
+import { UI_STRINGS } from "@/constants/ui.constants";
 
 export function DeleteModal({
   asset,

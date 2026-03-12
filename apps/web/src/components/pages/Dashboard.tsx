@@ -26,13 +26,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatBytes } from "@/lib/utils";
 import { assetsApi } from "@/services/asset.service";
-import type {
-  Asset,
-  AssetListParams,
-  AssetStatus,
-  ListViewProps,
-} from "@/interfaces";
-import { APP_NAME, UI_STRINGS } from "@/constants";
+import type { AssetStatus, AssetListParams, Asset } from "@/types/asset.types";
+import type { ListViewProps } from "@/types/props.types";
+import { APP_NAME } from "@/constants";
+import { UI_STRINGS } from "@/constants/ui.constants";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 

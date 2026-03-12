@@ -7,7 +7,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
-import { DEFAULT_EXPIRY_SECONDS } from "../utils/constants";
+import { DEFAULT_EXPIRY_SECONDS } from "../constants/constants";
 
 const s3Internal = new S3Client({
   endpoint: `http://${config.minio.endpoint}`,

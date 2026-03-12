@@ -4,8 +4,9 @@ import { useLogin } from "@/hooks/useAuth";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
-import type { ApiError } from "@/interfaces";
-import { APP_NAME, UI_STRINGS } from "@/constants";
+import type { ApiError } from "@/types";
+import { APP_NAME } from "@/constants";
+import { UI_STRINGS } from "@/constants/ui.constants";
 import { Eye, EyeOff } from "lucide-react";
 
 export function LoginPage() {

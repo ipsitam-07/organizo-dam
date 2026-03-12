@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { MoreHorizontal, Download, Share2, Trash2, Eye } from "lucide-react";
 import { cn, formatBytes, formatDate, mimeLabel, fileExt } from "@/lib/utils";
-import type { Props } from "@/interfaces";
-import { MIME_COLORS, STATUS_DOT } from "@/constants";
+import type { Props } from "@/types/props.types";
+import { MIME_COLORS, STATUS_DOT } from "@/constants/styles.constants";
 import { useCardThumbnail } from "@/hooks/useCardThumbnail";
 
 export function AssetCard({

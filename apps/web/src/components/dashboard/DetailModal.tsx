@@ -13,16 +13,16 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { formatBytes, formatDate, mimeLabel } from "@/lib/utils";
 import { assetsApi } from "@/services/asset.service";
+import type { AssetRenditionWithUrl } from "@/types/asset.types";
 import type {
-  AssetRenditionWithUrl,
-  DetailProps,
-  DownloadPickerProps,
   QualityPickerProps,
   PreviewProps,
-} from "@/interfaces";
-import { UI_STRINGS } from "@/constants";
+  DownloadPickerProps,
+  DetailProps,
+} from "@/types/props.types";
+import { UI_STRINGS } from "@/constants/ui.constants";
+import { STATUS_STYLE } from "@/constants/styles.constants";
 import { cn } from "@/lib/utils";
-import { STATUS_STYLE } from "@/constants";
 
 const QUALITY_ORDER = ["1080p", "720p", "480p", "360p", "240p"];
 function sortVideoRenditions(renditions: AssetRenditionWithUrl[]) {
