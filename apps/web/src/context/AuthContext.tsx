@@ -6,7 +6,7 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import type { User, AuthResponse } from "../interfaces";
+import type { User, AuthResponse } from "@/types/auth.types";
 import { authApi } from "../services/auth.service";
 import {
   getToken,
@@ -16,7 +16,7 @@ import {
   getUserKey,
   setUserKey,
 } from "../utils/storage";
-import type { ExtendedAuthContextValue, AuthState } from "../interfaces";
+import type { ExtendedAuthContextValue, AuthState } from "@/types/auth.types";
 import { ERROR_STRINGS } from "../constants";
 
 const AuthContext = createContext<ExtendedAuthContextValue | null>(null);

@@ -1,14 +1,13 @@
 import { apiClient } from "../config/axios";
-import { API_ENDPOINTS } from "@/constants";
+import { API_ENDPOINTS } from "@/constants/api.constants";
 import type {
-  Asset,
   AssetListParams,
   AssetListResponse,
-  ShareLink,
-  CreateShareLinkPayload,
-  Tag,
   AssetRenditionWithUrl,
-} from "../interfaces";
+  Asset,
+  Tag,
+} from "@/types/asset.types";
+import type { ShareLink, CreateShareLinkPayload } from "@/types";
 
 export const assetsApi = {
   // GET /api/assets

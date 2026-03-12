@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { assetsApi } from "@/services/asset.service";
 import { queryKeys } from "../lib/queryKeys";
-import type { AssetListParams } from "../interfaces";
+import type { AssetListParams } from "@/types/asset.types";
 
 export function useAssets(params?: AssetListParams) {
   const q = useQuery({

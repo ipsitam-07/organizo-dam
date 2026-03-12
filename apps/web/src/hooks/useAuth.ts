@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../services/auth.service";
 import { useAuth } from "../context/AuthContext";
-import type { LoginPayload, RegisterPayload } from "../interfaces";
+import type { RegisterPayload, LoginPayload } from "@/types/auth.types";
 import { queryKeys } from "../lib/queryKeys";
 
 export const useBootstrapAuth = () => {

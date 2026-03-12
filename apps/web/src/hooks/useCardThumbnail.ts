@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { Asset } from "@/interfaces";
+import type { Asset } from "@/types/asset.types";
 import { assetsApi } from "@/services/asset.service";
 
 export function useCardThumbnail(asset: Asset) {

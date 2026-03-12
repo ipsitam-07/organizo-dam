@@ -4,7 +4,7 @@ import { useUpload } from "@/hooks/useUpload";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatBytes } from "@/lib/utils";
-import { MAX_FILES, UI_STRINGS } from "@/constants";
+import { MAX_FILES, UI_STRINGS } from "@/constants/ui.constants";
 
 export function UploadModal({ onClose }: { onClose: () => void }) {
   const {

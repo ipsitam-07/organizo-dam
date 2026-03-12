@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { assetsApi } from "@/services/asset.service";
 import { queryKeys } from "../lib/queryKeys";
-import type { AssetListResponse } from "../interfaces";
+import type { AssetListResponse } from "@/types/asset.types";
 
 export function useDeleteAsset() {
   const qc = useQueryClient();
