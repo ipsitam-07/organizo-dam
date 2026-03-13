@@ -19,6 +19,7 @@ RUN pnpm install --filter auth --filter "@repo/*" --frozen-lockfile
 COPY packages/ ./packages/
 COPY apps/auth ./apps/auth
 
+RUN pnpm --filter "@repo/*" run build 
 RUN pnpm --filter auth run build
 
 RUN pnpm --filter auth deploy --legacy --prod /prod/auth

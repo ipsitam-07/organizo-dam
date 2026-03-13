@@ -3,26 +3,21 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++ ffmpeg poppler-utils
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9 --activate
 
-COPY pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-COPY apps/workers/package.json          ./apps/workers/
-COPY packages/config/package.json       ./packages/config/
-COPY packages/database/package.json     ./packages/database/
-COPY packages/logger/package.json       ./packages/logger/
-COPY packages/rabbitmq/package.json     ./packages/rabbitmq/
+RUN pnpm install --no-frozen-lockfile
 
-RUN pnpm install --filter workers --filter "@repo/*" --frozen-lockfile
+COPY . .
 
-COPY packages/ ./packages/
-COPY apps/workers ./apps/workers
+RUN pnpm --filter "./packages/*" build
 
-RUN pnpm --filter workers run build
+RUN pnpm --filter workers build
 
-RUN pnpm --filter workers deploy --legacy --prod /prod/workers
+RUN pnpm --filter workers deploy --prod /prod/workers
 
 #2. Runner 
 FROM node:20-alpine AS runner
@@ -31,8 +26,7 @@ WORKDIR /app
 
 RUN apk add --no-cache ffmpeg poppler-utils
 
-COPY --from=builder /app/apps/workers/dist ./dist
-COPY --from=builder /prod/workers ./
+COPY --from=builder /prod/workers .
 
 EXPOSE 9090
 
