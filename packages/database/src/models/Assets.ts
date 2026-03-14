@@ -68,6 +68,18 @@ export class Asset extends Model {
             fields: ["storage_key"],
             name: "assets_storage_key_unique",
           },
+          {
+            fields: ["user_id", "created_at"],
+            name: "idx_assets_user_created",
+          },
+          {
+            fields: ["user_id", "status"],
+            name: "idx_assets_user_status",
+          },
+          {
+            fields: ["status", "created_at"],
+            name: "idx_assets_status_created",
+          },
         ],
       }
     );
