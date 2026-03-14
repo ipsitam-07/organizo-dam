@@ -117,3 +117,4 @@ spec:
           annotations:
             summary: "Workers HPA is at maximum replicas"
             description: "Workers have been at 10 replicas for 5 minutes. Consider increasing maxReplicas."
+---

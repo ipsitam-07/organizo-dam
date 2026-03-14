@@ -4,7 +4,7 @@ metadata:
   name: dam-config
   namespace: dam-platform
 data:
-  NODE_ENV: "production"
+  NODE_ENV: "development"
 
   POSTGRES_HOST: "postgres-service"
   POSTGRES_PORT: "5432"
@@ -23,11 +23,12 @@ data:
   MINIO_ACCESS_KEY: "minioadmin"
   MINIO_BUCKET_CHUNKS: "dam-chunks"
   MINIO_BUCKET_ASSETS: "dam-assets"
+  MINIO_BUCKET_RENDITIONS: "dam-renditions"
 
-  PORT_AUTH: "3001"
-  PORT_UPLOAD: "3002"
-  PORT_ASSET: "3003"
+  AUTH_SERVICE_PORT: "3001"
+  UPLOAD_SERVICE_PORT: "3002"
+  ASSET_SERVICE_PORT: "3003"
 
-  FRONTEND_URL: "http://web-service"
+  FRONTEND_URL: "http://localhost:8080"
 
   JWT_EXPIRY: "86400"
