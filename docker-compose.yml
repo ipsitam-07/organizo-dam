@@ -80,7 +80,7 @@ services:
 
   # MinIO
   minio:
-    image: minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
     container_name: dam-minio
     restart: unless-stopped
     networks:
@@ -103,7 +103,7 @@ services:
 
   # MinIO bucket initialisation
   minio-init:
-    image: minio/mc:latest
+    image: cgr.dev/chainguard/minio-client:latest
     container_name: dam-minio-init
     networks:
       - dam-network
