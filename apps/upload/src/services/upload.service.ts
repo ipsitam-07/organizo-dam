@@ -1,4 +1,4 @@
-import { NotFoundError, UnauthorizedError } from "@repo/auth";
+import { ConflictError, NotFoundError, UnauthorizedError } from "@repo/auth";
 import { uploadRepository } from "../repo/upload.repo";
 import { logger } from "@repo/logger";
 
@@ -87,7 +87,7 @@ export class UploadService {
     }
 
     if (session.status === "complete") {
-      throw new Error("Cannot cancel a completed upload");
+      throw new ConflictError("Cannot cancel a completed upload");
     }
 
     return await uploadRepository.updateSessionStatus(session, "failed");

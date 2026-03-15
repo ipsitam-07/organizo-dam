@@ -69,7 +69,7 @@ export const initDb = async (config: DatabaseConfig) => {
     await sequelize.authenticate();
     logger.info("[Database] Connection established successfully.");
 
-    if (process.env.NODE_ENV !== "production") {
+    if (process.env.NODE_ENV === "development") {
       await sequelize.sync({ alter: { drop: false } });
       logger.info("[Database] Schema synchronized.");
     }
