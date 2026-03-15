@@ -1,23 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-
-vi.mock("@/utils/storage", () => ({
-  getToken: vi.fn().mockReturnValue(null),
-  setToken: vi.fn(),
-  clearToken: vi.fn(),
-  getUserKey: vi.fn().mockReturnValue(null),
-  setUserKey: vi.fn(),
-  clearUser: vi.fn(),
-}));
-
 import { Modal } from "../../src/components/ui/modal";
-import { getToken, getUserKey } from "../../src/utils/storage";
-
-beforeEach(() => {
-  vi.mocked(getToken).mockReturnValue(null);
-  vi.mocked(getUserKey).mockReturnValue(null);
-  vi.clearAllMocks();
-});
 
 //Modal
 
