@@ -6,7 +6,24 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 vi.mock("@/utils/storage", () => ({
   getToken: vi.fn().mockReturnValue(null),
   getUserKey: vi.fn().mockReturnValue(null),
+  setToken: vi.fn(),
+  setUserKey: vi.fn(),
+  clearToken: vi.fn(),
+  clearUser: vi.fn(),
 }));
+
+vi.mock("@/hooks/useAuth", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../src/hooks/useAuth")>();
+  const { useAuth } = await import("../../src/context/AuthContext");
+  return {
+    ...actual,
+    useBootstrapAuth: () => {
+      const { setHydrated } = useAuth();
+      setHydrated();
+    },
+  };
+});
 
 import { getToken, getUserKey } from "../../src/utils/storage";
 import { AuthProvider } from "../../src/context/AuthContext";
