@@ -6,6 +6,9 @@ import { QualityPicker } from "./QualityPicker";
 import { UI_STRINGS } from "@/constants/ui.constants";
 import type { AssetRenditionWithUrl } from "@/types/asset.types";
 import { sortVideoRenditions } from "@/utils/videoRenditions";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
+import { PRESIGNED_URL_STALE_MS } from "@/lib/queryClient";
 
 export function AssetPreview({ asset }: PreviewProps) {
   const isImage = asset.mime_type.startsWith("image/");
@@ -15,12 +18,43 @@ export function AssetPreview({ asset }: PreviewProps) {
   const canPreview =
     (isImage || isVideo || isAudio || isPdf) && asset.status === "ready";
 
-  const [renditions, setRenditions] = useState<AssetRenditionWithUrl[]>([]);
-  const [selectedVideo, setSelectedVideo] =
-    useState<AssetRenditionWithUrl | null>(null);
-  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const {
+    data: originalUrl = null,
+    isLoading: urlLoading,
+    isError: urlError,
+  } = useQuery({
+    queryKey: queryKeys.assets.previewUrl(asset.id),
+    queryFn: () =>
+      isPdf
+        ? assetsApi.getPreviewUrl(asset.id)
+        : assetsApi.getDownloadUrl(asset.id),
+    enabled: canPreview && !isVideo,
+    staleTime: PRESIGNED_URL_STALE_MS,
+    gcTime: PRESIGNED_URL_STALE_MS + 2 * 60 * 1000,
+    retry: false,
+  });
+
+  const {
+    data: videoData,
+    isLoading: videoLoading,
+    isError: videoError,
+  } = useQuery({
+    queryKey: queryKeys.assets.renditions(asset.id),
+    queryFn: async () => {
+      const [rs, origUrl] = await Promise.all([
+        assetsApi.getRenditions(asset.id),
+        assetsApi.getPreviewUrl(asset.id),
+      ]);
+      return { renditions: rs, originalUrl: origUrl };
+    },
+    enabled: canPreview && isVideo,
+    staleTime: PRESIGNED_URL_STALE_MS,
+    gcTime: PRESIGNED_URL_STALE_MS + 2 * 60 * 1000,
+    retry: false,
+  });
+
+  const renditions = videoData?.renditions ?? [];
+  const videoOriginalUrl = videoData?.originalUrl ?? null;
 
   const videoRenditions = sortVideoRenditions(
     renditions.filter(
@@ -28,37 +62,19 @@ export function AssetPreview({ asset }: PreviewProps) {
     )
   );
 
+  const [selectedVideo, setSelectedVideo] =
+    useState<AssetRenditionWithUrl | null>(null);
+
+  const firstRenditionId = videoRenditions[0]?.id ?? null;
   useEffect(() => {
-    if (!canPreview) return;
-    setError(false);
-    setLoading(true);
-    if (isVideo) {
-      Promise.all([
-        assetsApi.getRenditions(asset.id),
-        assetsApi.getPreviewUrl(asset.id),
-      ])
-        .then(([rs, origUrl]) => {
-          setRenditions(rs);
-          setOriginalUrl(origUrl);
-          const sorted = sortVideoRenditions(
-            rs.filter(
-              (r) => r.rendition_type === "video" && r.status === "ready"
-            )
-          );
-          if (sorted.length > 0) setSelectedVideo(sorted[0]);
-        })
-        .catch(() => setError(true))
-        .finally(() => setLoading(false));
-    } else {
-      const fetchUrl = isPdf
-        ? assetsApi.getPreviewUrl(asset.id)
-        : assetsApi.getDownloadUrl(asset.id);
-      fetchUrl
-        .then(setOriginalUrl)
-        .catch(() => setError(true))
-        .finally(() => setLoading(false));
+    if (videoRenditions.length > 0) {
+      setSelectedVideo(videoRenditions[0]);
     }
-  }, [asset.id, canPreview, isVideo, isPdf]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstRenditionId]);
+
+  const loading = urlLoading || videoLoading;
+  const error = urlError || videoError;
 
   if (!canPreview) {
     return (
@@ -110,10 +126,10 @@ export function AssetPreview({ asset }: PreviewProps) {
               {UI_STRINGS.DETAIL_MODAL.TRANSCODING_IN_PROGRESS}
             </p>
           </div>
-          {originalUrl && (
+          {videoOriginalUrl && (
             <video
-              key={originalUrl}
-              src={originalUrl}
+              key={videoOriginalUrl}
+              src={videoOriginalUrl}
               controls
               className="max-h-64 w-full"
               preload="metadata"

@@ -31,7 +31,11 @@ export function useDeleteAsset() {
     onSettled: (_d, _e, id) => {
       qc.removeQueries({ queryKey: queryKeys.assets.all() });
       qc.invalidateQueries({ queryKey: queryKeys.assets.all() });
-      qc.removeQueries({ queryKey: ["assets", "detail", id] });
+
+      qc.removeQueries({ queryKey: queryKeys.assets.thumbnail(id) });
+      qc.removeQueries({ queryKey: queryKeys.assets.previewUrl(id) });
+      qc.removeQueries({ queryKey: queryKeys.assets.renditions(id) });
+      qc.removeQueries({ queryKey: queryKeys.assets.downloadUrl(id) });
     },
   });
 }

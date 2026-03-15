@@ -1,47 +1,33 @@
-import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { Asset } from "@/types/asset.types";
 import { assetsApi } from "@/services/asset.service";
-
-const RETRY_INTERVAL = 4_000;
-const MAX_RETRIES = 15;
+import { queryKeys } from "@/lib/queryKeys";
+import { PRESIGNED_URL_STALE_MS } from "@/lib/queryClient";
+import { THUMBNAIL_SUPPORTED_TYPES } from "@/constants/hooks.contants";
 
 export function useCardThumbnail(asset: Asset) {
-  const [url, setUrl] = useState<string | null>(null);
-  const retryCount = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const canHaveThumbnail =
+    asset.status === "ready" && THUMBNAIL_SUPPORTED_TYPES.has(asset.mime_type);
 
-  useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    retryCount.current = 0;
+  const hasThumbnailRendition =
+    Array.isArray(asset.AssetRenditions) && asset.AssetRenditions.length > 0;
 
-    if (asset.status !== "ready") {
-      setUrl(null);
-      return;
-    }
+  const { data: url = null } = useQuery({
+    queryKey: queryKeys.assets.thumbnail(asset.id),
+    queryFn: () => assetsApi.getThumbnailUrl(asset.id),
+    enabled: canHaveThumbnail,
 
-    let cancelled = false;
+    staleTime: PRESIGNED_URL_STALE_MS,
+    gcTime: PRESIGNED_URL_STALE_MS + 2 * 60 * 1000,
 
-    async function fetchThumbnail() {
-      const u = await assetsApi.getThumbnailUrl(asset.id);
-      if (cancelled) return;
+    refetchInterval: (query) => {
+      if (query.state.data) return false;
+      if (hasThumbnailRendition) return false;
+      return canHaveThumbnail ? 4_000 : false;
+    },
 
-      if (u) {
-        setUrl(u);
-      } else if (retryCount.current < MAX_RETRIES) {
-        retryCount.current += 1;
-        timerRef.current = setTimeout(() => {
-          if (!cancelled) fetchThumbnail();
-        }, RETRY_INTERVAL);
-      }
-    }
+    retry: false,
+  });
 
-    fetchThumbnail();
-
-    return () => {
-      cancelled = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [asset.id, asset.status]);
-
-  return url;
+  return url ?? null;
 }

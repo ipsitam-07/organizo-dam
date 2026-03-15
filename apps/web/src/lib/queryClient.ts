@@ -1,5 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 
+const PRESIGNED_URL_STALE_MS = 10 * 60 * 1000; // 10 min
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -9,3 +11,5 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+export { PRESIGNED_URL_STALE_MS };

@@ -1,5 +1,7 @@
 import type { DownloadPickerProps } from "@/types/props.types";
-import type { AssetRenditionWithUrl } from "@/types/asset.types";
+import { PRESIGNED_URL_STALE_MS } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 import { useState, useRef, useEffect } from "react";
 import { sortVideoRenditions } from "@/utils/videoRenditions";
 import { toast } from "sonner";
@@ -12,14 +14,30 @@ import { Download, ChevronDown } from "lucide-react";
 import { cn } from "@/utils/utility";
 
 export function DownloadButton({ asset }: DownloadPickerProps) {
-  const [renditions, setRenditions] = useState<AssetRenditionWithUrl[]>([]);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
   const isVideo = asset.mime_type.startsWith("video/");
+
+  const { data: renditionsData, isFetching: renditionsFetching } = useQuery({
+    queryKey: queryKeys.assets.renditions(asset.id),
+    queryFn: async () => {
+      const [rs, origUrl] = await Promise.all([
+        assetsApi.getRenditions(asset.id),
+        assetsApi.getPreviewUrl(asset.id),
+      ]);
+      return { renditions: rs, originalUrl: origUrl };
+    },
+    enabled: isVideo && asset.status === "ready",
+    staleTime: PRESIGNED_URL_STALE_MS,
+    gcTime: PRESIGNED_URL_STALE_MS + 2 * 60 * 1000,
+    retry: false,
+  });
+
+  const renditions = renditionsData?.renditions ?? [];
+  const loading = renditionsFetching && renditions.length === 0;
 
   const videoRenditions = sortVideoRenditions(
     renditions.filter(
@@ -62,31 +80,12 @@ export function DownloadButton({ asset }: DownloadPickerProps) {
       return;
     }
     const currentRect = triggerRef.current?.getBoundingClientRect() ?? null;
-
-    if (renditions.length > 0) {
+    if (videoRenditions.length > 0) {
       setRect(currentRect);
       setOpen(true);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const rs = await assetsApi.getRenditions(asset.id);
-      setRenditions(rs);
-      const videoRs = rs.filter(
-        (r) => r.rendition_type === "video" && r.status === "ready"
-      );
-      if (videoRs.length > 0) {
-        setRect(currentRect);
-        setOpen(true);
-      } else {
-        // No renditions
-        await doDownload();
-      }
-    } catch {
+    } else {
+      // Renditions not ready or no transcoded versions — download original.
       await doDownload();
-    } finally {
-      setLoading(false);
     }
   };
   const DROPDOWN_HEIGHT = 220;

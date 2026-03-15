@@ -3,6 +3,7 @@ import tsParser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import prettierPlugin from "eslint-plugin-prettier";
 import prettierConfig from "eslint-config-prettier";
+import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 
 export default [
@@ -19,15 +20,18 @@ export default [
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
+        ecmaFeatures: { jsx: true },
       },
     },
     plugins: {
       "@typescript-eslint": tsPlugin,
       prettier: prettierPlugin,
+      "react-hooks": reactHooks,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       ...prettierConfig.rules,
+      ...reactHooks.configs.recommended.rules,
       "prettier/prettier": "error",
       "@typescript-eslint/no-unused-vars": [
         "warn",
