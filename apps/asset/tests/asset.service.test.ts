@@ -18,6 +18,7 @@ vi.mock("../src/repo/asset.repo", () => ({
     removeTag: vi.fn(),
     findTagById: vi.fn(),
     createShareLink: vi.fn(),
+    deleteShareLink: vi.fn(),
     findShareLinkByToken: vi.fn(),
     incrementShareLinkDownloads: vi.fn(),
     getStats: vi.fn(),
@@ -400,5 +401,46 @@ describe("AssetService.resolveShareLink", () => {
     await expect(
       assetService.resolveShareLink("token-123")
     ).rejects.toMatchObject({ statusCode: 410 });
+  });
+});
+
+//revokeShareLink
+describe("AssetService.revokeShareLink", () => {
+  it("deletes the share link and returns nothing", async () => {
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(
+      mockAsset as any
+    );
+    vi.mocked(assetRepository.deleteShareLink).mockResolvedValue(1);
+
+    await expect(
+      assetService.revokeShareLink("asset-1", "link-1", "user-1")
+    ).resolves.toBeUndefined();
+
+    expect(assetRepository.deleteShareLink).toHaveBeenCalledWith(
+      "link-1",
+      "asset-1",
+      "user-1"
+    );
+  });
+
+  it("throws NotFoundError when the asset does not belong to the user", async () => {
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(null);
+
+    await expect(
+      assetService.revokeShareLink("asset-1", "link-1", "user-1")
+    ).rejects.toThrow("Asset not found");
+
+    expect(assetRepository.deleteShareLink).not.toHaveBeenCalled();
+  });
+
+  it("throws NotFoundError when the link does not exist or belong to this asset", async () => {
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(
+      mockAsset as any
+    );
+    vi.mocked(assetRepository.deleteShareLink).mockResolvedValue(0);
+
+    await expect(
+      assetService.revokeShareLink("asset-1", "bad-link", "user-1")
+    ).rejects.toThrow("Share link not found");
   });
 });

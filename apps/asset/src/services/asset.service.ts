@@ -26,6 +26,8 @@ export class AssetService {
     const asset = await assetRepository.findByIdAndUser(assetId, userId);
     if (!asset) throw new NotFoundError("Asset not found");
 
+    // Delete all rendition objects from MinIO before destroying the DB row,
+    // since the DB cascade will remove the rendition rows but not the objects.
     const renditions = await assetRepository.findAllRenditions(assetId);
     await Promise.all(
       renditions.map((r) =>
@@ -41,7 +43,7 @@ export class AssetService {
     // Delete the original file
     await deleteObject(config.minio.buckets.assets, asset.storage_key);
 
-    // Destroy the DB row
+    // Destroy the DB row (cascades to asset_renditions, processing_jobs, etc.)
     await asset.destroy();
 
     logger.info(
@@ -208,6 +210,26 @@ export class AssetService {
       max_downloads: data.max_downloads,
       expires_at,
     });
+  }
+
+  async revokeShareLink(
+    assetId: string,
+    linkId: string,
+    userId: string
+  ): Promise<void> {
+    const asset = await assetRepository.findByIdAndUser(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const deleted = await assetRepository.deleteShareLink(
+      linkId,
+      assetId,
+      userId
+    );
+    if (deleted === 0) throw new NotFoundError("Share link not found");
+
+    logger.info(
+      `[AssetService] Revoked share link "${linkId}" for asset "${assetId}"`
+    );
   }
 
   async resolveShareLink(

@@ -211,6 +211,12 @@ export class AssetRepository {
       where: { id: shareLinkId },
     });
   }
+
+  async deleteShareLink(linkId: string, assetId: string, userId: string) {
+    return ShareLink.destroy({
+      where: { id: linkId, asset_id: assetId, created_by: userId },
+    });
+  }
 }
 
 export const assetRepository = new AssetRepository();

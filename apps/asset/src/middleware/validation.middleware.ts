@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { ZodSchema } from "zod";
+import { ZodSchema, z } from "zod";
 
 export const validate =
   (schema: ZodSchema) =>
@@ -41,3 +41,21 @@ export const validateQuery =
     (req as any).validatedQuery = result.data;
     next();
   };
+
+const uuidSchema = z.string().uuid("Invalid asset ID format");
+// Validates that req.params.id is a valid UUID
+export const validateAssetId = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const result = uuidSchema.safeParse(req.params.id);
+  if (!result.success) {
+    res.status(400).json({
+      status: "error",
+      message: "Invalid asset ID format",
+    });
+    return;
+  }
+  next();
+};

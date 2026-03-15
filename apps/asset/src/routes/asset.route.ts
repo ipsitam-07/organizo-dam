@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { requireAuth } from "@repo/auth";
 import { assetController } from "../controllers/asset.controller";
-import { validate, validateQuery } from "../middleware/validation.middleware";
+import {
+  validate,
+  validateQuery,
+  validateAssetId,
+} from "../middleware/validation.middleware";
 import {
   addTagSchema,
   createShareLinkSchema,
@@ -22,23 +26,44 @@ router.get(
 router.get("/stats", assetController.getStats.bind(assetController));
 
 // GET /api/assets/:id
-router.get("/:id", assetController.getAssetbyID.bind(assetController));
+router.get(
+  "/:id",
+  validateAssetId,
+  assetController.getAssetbyID.bind(assetController)
+);
 
 // DELETE /api/assets/:id
-router.delete("/:id", assetController.removeAsset.bind(assetController));
+router.delete(
+  "/:id",
+  validateAssetId,
+  assetController.removeAsset.bind(assetController)
+);
 
 // GET /api/assets/:id/download?rendition=label
-router.get("/:id/download", assetController.download.bind(assetController));
+router.get(
+  "/:id/download",
+  validateAssetId,
+  assetController.download.bind(assetController)
+);
 
 // GET /api/assets/:id/thumbnail
-router.get("/:id/thumbnail", assetController.thumbnail.bind(assetController));
+router.get(
+  "/:id/thumbnail",
+  validateAssetId,
+  assetController.thumbnail.bind(assetController)
+);
 
 // GET /api/assets/:id/renditions
-router.get("/:id/renditions", assetController.renditions.bind(assetController));
+router.get(
+  "/:id/renditions",
+  validateAssetId,
+  assetController.renditions.bind(assetController)
+);
 
 // POST /api/assets/:id/tags
 router.post(
   "/:id/tags",
+  validateAssetId,
   validate(addTagSchema),
   assetController.addTag.bind(assetController)
 );
@@ -46,17 +71,30 @@ router.post(
 // DELETE /api/assets/:id/tags/:tagId
 router.delete(
   "/:id/tags/:tagId",
+  validateAssetId,
   assetController.removeTag.bind(assetController)
 );
 
 // GET /api/assets/:id/status
-router.get("/:id/status", assetController.status.bind(assetController));
+router.get(
+  "/:id/status",
+  validateAssetId,
+  assetController.status.bind(assetController)
+);
 
 // POST /api/assets/:id/share
 router.post(
   "/:id/share",
+  validateAssetId,
   validate(createShareLinkSchema),
   assetController.createShareLink.bind(assetController)
+);
+
+// DELETE /api/assets/:id/share/:linkId
+router.delete(
+  "/:id/share/:linkId",
+  validateAssetId,
+  assetController.revokeShareLink.bind(assetController)
 );
 
 export default router;

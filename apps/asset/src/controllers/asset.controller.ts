@@ -139,6 +139,20 @@ export class AssetController {
       next(err);
     }
   }
+
+  //Share link revoke
+  async revokeShareLink(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      await assetService.revokeShareLink(
+        req.params.id,
+        req.params.linkId,
+        req.user!.id
+      );
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const assetController = new AssetController();
