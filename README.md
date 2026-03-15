@@ -29,7 +29,7 @@ A **Digital Asset Management** platform built as a pnpm + Turborepo monorepo. Up
 - Password-protected share links with expiry and download limits
 - Download tracking
 - Presigned MinIO URLs for direct asset and rendition downloads
-- Swagger UI at `http://localhost:3001/api-docs`
+- Swagger UI at `http://localhost:3000/api-docs` or via Nginx
 - Zod validation on all inputs, Helmet security headers on all services
 
 ## Prerequisites
