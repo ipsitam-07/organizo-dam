@@ -109,6 +109,13 @@ export class AssetRepository {
     return asset;
   }
 
+  async findAllRenditions(assetId: string) {
+    return AssetRendition.findAll({
+      where: { asset_id: assetId },
+      attributes: ["id", "storage_key", "label"],
+    });
+  }
+
   async findById(id: string) {
     return Asset.findByPk(id);
   }

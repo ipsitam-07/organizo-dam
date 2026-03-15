@@ -26,14 +26,26 @@ export class AssetService {
     const asset = await assetRepository.findByIdAndUser(assetId, userId);
     if (!asset) throw new NotFoundError("Asset not found");
 
-    // Delete original
+    const renditions = await assetRepository.findAllRenditions(assetId);
+    await Promise.all(
+      renditions.map((r) =>
+        deleteObject(config.minio.buckets.renditions, r.storage_key).catch(
+          (err) =>
+            logger.warn(
+              `[AssetService] Failed to delete rendition "${r.storage_key}" from MinIO: ${err.message}`
+            )
+        )
+      )
+    );
+
+    // Delete the original file
     await deleteObject(config.minio.buckets.assets, asset.storage_key);
 
     // Destroy the DB row
     await asset.destroy();
 
     logger.info(
-      `[AssetService] Deleted asset "${assetId}" for user "${userId}"`
+      `[AssetService] Deleted asset "${assetId}" (${renditions.length} rendition(s) cleaned up) for user "${userId}"`
     );
   }
 

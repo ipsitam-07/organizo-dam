@@ -28,7 +28,9 @@ beforeEach(() => vi.clearAllMocks());
 describe("handleJobEvent", () => {
   it("marks asset READY when all jobs complete", async () => {
     vi.mocked(ProcessingJob.update).mockResolvedValue([1] as any);
-    vi.mocked(ProcessingJob.count).mockResolvedValue(0);
+    vi.mocked(ProcessingJob.count)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(1);
     vi.mocked(Asset.update).mockResolvedValue([1] as any);
 
     await handleJobEvent(
@@ -53,7 +55,9 @@ describe("handleJobEvent", () => {
 
   it("does NOT mark asset ready when other jobs are still pending", async () => {
     vi.mocked(ProcessingJob.update).mockResolvedValue([1] as any);
-    vi.mocked(ProcessingJob.count).mockResolvedValue(2); // 2 jobs still pending
+    vi.mocked(ProcessingJob.count)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(3);
     vi.mocked(Asset.update).mockResolvedValue([1] as any);
 
     await handleJobEvent(
