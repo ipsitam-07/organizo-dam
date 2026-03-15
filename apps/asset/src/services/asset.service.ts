@@ -7,6 +7,7 @@ import { config } from "@repo/config";
 import { deleteObject, getPresignedUrl } from "../services/storage.service";
 import { logger } from "@repo/logger";
 import { attachTag, autoTagAsset } from "./tag.service";
+import { DEFAULT_EXPIRY_SECONDS } from "../constants/constants";
 
 export class AssetService {
   //list of assets
@@ -26,8 +27,6 @@ export class AssetService {
     const asset = await assetRepository.findByIdAndUser(assetId, userId);
     if (!asset) throw new NotFoundError("Asset not found");
 
-    // Delete all rendition objects from MinIO before destroying the DB row,
-    // since the DB cascade will remove the rendition rows but not the objects.
     const renditions = await assetRepository.findAllRenditions(assetId);
     await Promise.all(
       renditions.map((r) =>
@@ -55,7 +54,8 @@ export class AssetService {
     assetId: string,
     userId: string,
     renditionLabel?: string,
-    request?: { ip?: string; userAgent?: string }
+    request?: { ip?: string; userAgent?: string },
+    forPreview = false
   ) {
     const asset = await assetRepository.findByIdAndUser(assetId, userId);
     if (!asset) throw new NotFoundError("Asset not found");
@@ -78,7 +78,12 @@ export class AssetService {
       renditionId = rendition.id;
     }
 
-    const url = await getPresignedUrl(bucket, storageKey);
+    const url = await getPresignedUrl(
+      bucket,
+      storageKey,
+      DEFAULT_EXPIRY_SECONDS,
+      forPreview
+    );
 
     // Log the download
     await assetRepository.logDownload({
@@ -110,7 +115,8 @@ export class AssetService {
     const url = await getPresignedUrl(
       config.minio.buckets.renditions,
       thumbnail.storage_key,
-      3600
+      3600,
+      true
     );
     return url;
   }

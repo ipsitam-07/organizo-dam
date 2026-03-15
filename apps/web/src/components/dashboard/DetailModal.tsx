@@ -188,7 +188,7 @@ function AssetPreview({ asset }: PreviewProps) {
     if (isVideo) {
       Promise.all([
         assetsApi.getRenditions(asset.id),
-        assetsApi.getDownloadUrl(asset.id),
+        assetsApi.getPreviewUrl(asset.id),
       ])
         .then(([rs, origUrl]) => {
           setRenditions(rs);
@@ -203,13 +203,15 @@ function AssetPreview({ asset }: PreviewProps) {
         .catch(() => setError(true))
         .finally(() => setLoading(false));
     } else {
-      assetsApi
-        .getDownloadUrl(asset.id)
+      const fetchUrl = isPdf
+        ? assetsApi.getPreviewUrl(asset.id)
+        : assetsApi.getDownloadUrl(asset.id);
+      fetchUrl
         .then(setOriginalUrl)
         .catch(() => setError(true))
         .finally(() => setLoading(false));
     }
-  }, [asset.id, canPreview, isVideo]);
+  }, [asset.id, canPreview, isVideo, isPdf]);
 
   if (!canPreview) {
     return (

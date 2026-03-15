@@ -9,7 +9,7 @@ import { config } from "@repo/config";
 import { logger } from "@repo/logger";
 import { DEFAULT_EXPIRY_SECONDS } from "../constants/constants";
 
-const s3Internal = new S3Client({
+const s3 = new S3Client({
   endpoint: `http://${config.minio.endpoint}`,
   region: "us-east-1",
   credentials: {
@@ -19,33 +19,38 @@ const s3Internal = new S3Client({
   forcePathStyle: true,
 });
 
-const publicEndpoint =
-  process.env.MINIO_PUBLIC_URL ?? `http://${config.minio.endpoint}`;
-const s3Public = new S3Client({
-  endpoint: publicEndpoint,
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: config.minio.accessKey,
-    secretAccessKey: config.minio.secretKey!,
-  },
-  forcePathStyle: true,
-});
+const INTERNAL_ORIGIN = `http://${config.minio.endpoint}`;
+const PUBLIC_ORIGIN =
+  process.env.MINIO_PUBLIC_URL?.replace(/\/$/, "") ?? `http://localhost/minio`;
+
+function toPublicUrl(internalUrl: string): string {
+  return internalUrl.replace(INTERNAL_ORIGIN, PUBLIC_ORIGIN);
+}
 
 export async function getPresignedUrl(
   bucket: string,
   key: string,
-  expirySeconds = DEFAULT_EXPIRY_SECONDS
+  expirySeconds = DEFAULT_EXPIRY_SECONDS,
+  inline = false
 ): Promise<string> {
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-  const url = await getSignedUrl(s3Public, command, {
-    expiresIn: expirySeconds,
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ...(inline
+      ? {
+          ResponseContentDisposition: "inline",
+          ResponseContentType: "application/pdf",
+        }
+      : {}),
   });
+  const signed = await getSignedUrl(s3, command, { expiresIn: expirySeconds });
+  const url = toPublicUrl(signed);
   logger.info(`[Storage] Generated presigned URL for key="${key}"`);
   return url;
 }
 
 export async function deleteObject(bucket: string, key: string): Promise<void> {
-  await s3Internal.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
   logger.info(`[Storage] Deleted object key="${key}" from bucket="${bucket}"`);
 }
 
@@ -54,7 +59,7 @@ export async function objectExists(
   key: string
 ): Promise<boolean> {
   try {
-    await s3Internal.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
     return true;
   } catch {
     return false;

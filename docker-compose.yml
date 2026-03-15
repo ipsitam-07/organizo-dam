@@ -275,7 +275,7 @@ services:
       - /app/packages/database/node_modules
       - /app/packages/logger/node_modules
     environment:
-      MINIO_PUBLIC_URL: http://localhost:9000
+      MINIO_PUBLIC_URL: http://localhost/minio
       NODE_ENV: ${NODE_ENV}
       ASSET_SERVICE_PORT: 3003
 

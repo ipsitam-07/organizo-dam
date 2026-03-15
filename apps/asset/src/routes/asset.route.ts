@@ -46,6 +46,13 @@ router.get(
   assetController.download.bind(assetController)
 );
 
+// GET /api/assets/:id/preview
+router.get(
+  "/:id/preview",
+  validateAssetId,
+  assetController.preview.bind(assetController)
+);
+
 // GET /api/assets/:id/thumbnail
 router.get(
   "/:id/thumbnail",

@@ -79,6 +79,21 @@ export class AssetController {
     }
   }
 
+  async preview(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await assetService.getDownloadUrl(
+        req.params.id,
+        req.user!.id,
+        undefined,
+        { ip: req.ip, userAgent: req.headers["user-agent"] },
+        true
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   //tags
   async addTag(req: AuthRequest, res: Response, next: NextFunction) {
     try {
