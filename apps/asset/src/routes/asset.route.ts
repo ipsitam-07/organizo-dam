@@ -1,14 +1,22 @@
 import { Router } from "express";
 import { requireAuth } from "@repo/auth";
 import { assetController } from "../controllers/asset.controller";
-import { validate } from "../middleware/validation.middleware";
-import { addTagSchema, createShareLinkSchema } from "../schemas/asset.schema";
+import { validate, validateQuery } from "../middleware/validation.middleware";
+import {
+  addTagSchema,
+  createShareLinkSchema,
+  listAssetsSchema,
+} from "../schemas/asset.schema";
 
 const router = Router();
 router.use(requireAuth);
 
 // GET /api/assets — list with filters and pagination
-router.get("/", assetController.listOfAssets.bind(assetController));
+router.get(
+  "/",
+  validateQuery(listAssetsSchema),
+  assetController.listOfAssets.bind(assetController)
+);
 
 // GET /api/assets/stats (admin only access can be added later via requireAdmin)
 router.get("/stats", assetController.getStats.bind(assetController));

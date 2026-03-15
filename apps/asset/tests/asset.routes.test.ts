@@ -99,7 +99,7 @@ import { NotFoundError } from "@repo/auth";
 // GET /api/assets
 
 describe("GET /api/assets", () => {
-  it("returns paginated asset list", async () => {
+  it("returns paginated asset list with default params", async () => {
     vi.mocked(assetService.listAssets).mockResolvedValue({
       data: [{ id: "asset-1" }],
       total: 1,
@@ -114,6 +114,70 @@ describe("GET /api/assets", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
+    // Verify schema defaults were applied — page=1, limit=20
+    expect(assetService.listAssets).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({ page: 1, limit: 20 })
+    );
+  });
+
+  it("coerces string query params to the correct types", async () => {
+    vi.mocked(assetService.listAssets).mockResolvedValue({
+      data: [],
+      total: 0,
+      page: 2,
+      limit: 10,
+      totalPages: 0,
+    } as any);
+
+    const res = await request(app)
+      .get("/api/assets?page=2&limit=10&status=ready")
+      .set("Authorization", "Bearer token");
+
+    expect(res.status).toBe(200);
+    expect(assetService.listAssets).toHaveBeenCalledWith(
+      "user-1",
+      expect.objectContaining({ page: 2, limit: 10, status: "ready" })
+    );
+  });
+
+  it("returns 422 when page is not a number", async () => {
+    const res = await request(app)
+      .get("/api/assets?page=abc")
+      .set("Authorization", "Bearer token");
+
+    expect(res.status).toBe(422);
+    expect(res.body.errors[0].field).toBe("page");
+    expect(assetService.listAssets).not.toHaveBeenCalled();
+  });
+
+  it("returns 422 when limit exceeds maximum of 100", async () => {
+    const res = await request(app)
+      .get("/api/assets?limit=999")
+      .set("Authorization", "Bearer token");
+
+    expect(res.status).toBe(422);
+    expect(res.body.errors[0].field).toBe("limit");
+    expect(assetService.listAssets).not.toHaveBeenCalled();
+  });
+
+  it("returns 422 when status is not a valid enum value", async () => {
+    const res = await request(app)
+      .get("/api/assets?status=invalid")
+      .set("Authorization", "Bearer token");
+
+    expect(res.status).toBe(422);
+    expect(res.body.errors[0].field).toBe("status");
+    expect(assetService.listAssets).not.toHaveBeenCalled();
+  });
+
+  it("returns 422 when page is less than 1", async () => {
+    const res = await request(app)
+      .get("/api/assets?page=0")
+      .set("Authorization", "Bearer token");
+
+    expect(res.status).toBe(422);
+    expect(assetService.listAssets).not.toHaveBeenCalled();
   });
 });
 

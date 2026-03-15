@@ -8,7 +8,7 @@ export class AssetController {
     try {
       const result = await assetService.listAssets(
         req.user!.id,
-        req.query as any
+        (req as any).validatedQuery
       );
       res.json(result);
     } catch (err) {
