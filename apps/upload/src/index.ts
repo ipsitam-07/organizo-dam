@@ -129,9 +129,13 @@ const startServer = async () => {
       logging: config.env === "development",
     });
 
-    app.listen(config.ports.upload, () => {
-      logger.info(`[Upload Service] Listening on port ${config.ports.upload}`);
-    });
+    if (process.env.NODE_ENV !== "test") {
+      app.listen(config.ports.upload, () => {
+        logger.info(
+          `[Upload Service] Listening on port ${config.ports.upload}`
+        );
+      });
+    }
     await rabbitMQService.connect();
   } catch (error) {
     logger.error("[Upload Service] Failed to start:", { error });

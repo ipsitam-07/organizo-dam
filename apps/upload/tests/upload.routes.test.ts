@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import { app } from "../src/index";
 import { uploadService } from "../src/services/upload.service";
+import { AppError } from "@repo/auth";
 
 vi.mock("../src/services/upload.service", () => ({
   uploadService: {
@@ -58,14 +59,27 @@ vi.mock("@repo/database", () => ({ initDb: vi.fn() }));
 vi.mock("@repo/logger", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
-vi.mock("@tus/server", () => ({
-  Server: vi.fn().mockImplementation(() => ({})),
-}));
+
+vi.mock("@tus/server", () => {
+  return {
+    Server: class MockServer {
+      handle = vi.fn();
+      on = vi.fn();
+      constructor(_opts?: unknown) {}
+    },
+  };
+});
+
 vi.mock("@tus/s3-store", () => ({
   S3Store: vi.fn(),
 }));
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+const VALID_UUID = "550e8400-e29b-41d4-a716-446655440000";
+const ANOTHER_VALID_UUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 
 //GET /api/upload/sessions
 
@@ -74,6 +88,7 @@ describe("GET /api/upload/sessions", () => {
     const sessions = [
       { id: "session-1", status: "complete", original_filename: "video.mp4" },
     ];
+
     vi.mocked(uploadService.getUserSessions).mockResolvedValue(sessions as any);
 
     const res = await request(app)
@@ -101,23 +116,25 @@ describe("GET /api/upload/sessions", () => {
 
 describe("GET /api/upload/sessions/:id", () => {
   it("returns a specific session", async () => {
-    const session = { id: "session-1", status: "complete" };
+    const session = { id: VALID_UUID, status: "complete" };
+
     vi.mocked(uploadService.getSessionById).mockResolvedValue(session as any);
 
     const res = await request(app)
-      .get("/api/upload/sessions/session-1")
+      .get(`/api/upload/sessions/${VALID_UUID}`)
       .set("Authorization", "Bearer valid-token");
 
     expect(res.status).toBe(200);
-    expect(res.body.data.id).toBe("session-1");
+    expect(res.body.data.id).toBe(VALID_UUID);
   });
 
   it("returns 404 when session not found", async () => {
-    const session = { id: "session-1", status: "complete" };
-    vi.mocked(uploadService.getSessionById).mockResolvedValue(session as any);
+    vi.mocked(uploadService.getSessionById).mockRejectedValue(
+      new AppError("Session not found", 404)
+    );
 
     const res = await request(app)
-      .get("/api/upload/sessions/bad-id")
+      .get(`/api/upload/sessions/${ANOTHER_VALID_UUID}`)
       .set("Authorization", "Bearer valid-token");
 
     expect(res.status).toBe(404);
@@ -128,11 +145,12 @@ describe("GET /api/upload/sessions/:id", () => {
 
 describe("POST /api/upload/sessions/:id/cancel", () => {
   it("cancels an in-progress session", async () => {
-    const cancelled = { id: "session-1", status: "failed" };
+    const cancelled = { id: VALID_UUID, status: "failed" };
+
     vi.mocked(uploadService.cancelSession).mockResolvedValue(cancelled as any);
 
     const res = await request(app)
-      .post("/api/upload/sessions/session-1/cancel")
+      .post(`/api/upload/sessions/${VALID_UUID}/cancel`)
       .set("Authorization", "Bearer valid-token");
 
     expect(res.status).toBe(200);
@@ -140,10 +158,12 @@ describe("POST /api/upload/sessions/:id/cancel", () => {
   });
 
   it("returns 404 when session not found", async () => {
-    vi.mocked(uploadService.cancelSession).mockResolvedValue(null);
+    vi.mocked(uploadService.cancelSession).mockRejectedValue(
+      new AppError("Session not found", 404)
+    );
 
     const res = await request(app)
-      .post("/api/upload/sessions/bad-id/cancel")
+      .post(`/api/upload/sessions/${ANOTHER_VALID_UUID}/cancel`)
       .set("Authorization", "Bearer valid-token");
 
     expect(res.status).toBe(404);
