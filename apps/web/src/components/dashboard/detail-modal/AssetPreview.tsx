@@ -9,6 +9,7 @@ import { sortVideoRenditions } from "@/utils/videoRenditions";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import { PRESIGNED_URL_STALE_MS } from "@/lib/queryClient";
+import { ImageLoader } from "./ImageLoader";
 
 export function AssetPreview({ asset }: PreviewProps) {
   const isImage = asset.mime_type.startsWith("image/");
@@ -168,14 +169,17 @@ export function AssetPreview({ asset }: PreviewProps) {
     );
   }
 
-  if (isImage && originalUrl) {
+  if (isImage) {
     return (
-      <div className="border-border bg-muted/20 overflow-hidden rounded-lg border">
-        <img
-          src={originalUrl}
-          alt={asset.original_filename}
-          className="max-h-72 w-full object-contain"
-        />
+      <div className="border-border bg-muted/20 relative h-72 overflow-hidden rounded-lg border">
+        {!originalUrl && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="border-muted-foreground h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
+          </div>
+        )}
+        {originalUrl && (
+          <ImageLoader src={originalUrl} alt={asset.original_filename} />
+        )}
       </div>
     );
   }
