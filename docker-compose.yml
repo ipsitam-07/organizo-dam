@@ -80,7 +80,7 @@ services:
 
   # MinIO
   minio:
-    image: cgr.dev/chainguard/minio:latest
+    image: minio/minio:latest
     container_name: dam-minio
     restart: unless-stopped
     networks:
@@ -103,7 +103,7 @@ services:
 
   # MinIO bucket initialisation
   minio-init:
-    image: cgr.dev/chainguard/minio-client:latest
+    image: minio/mc:latest
     container_name: dam-minio-init
     networks:
       - dam-network
@@ -386,6 +386,34 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
 
+  # apps/gateway — Unified Swagger UI (all services merged at one URL)
+  gateway:
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile.dev
+    container_name: dam-gateway
+    restart: unless-stopped
+    networks:
+      - dam-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/gateway/node_modules
+      - /app/packages/config/node_modules
+      - /app/packages/docs/node_modules
+      - /app/packages/logger/node_modules
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      GATEWAY_PORT: 3000
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health/gateway"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # NGINX — reverse proxy
   nginx:
     image: nginx:alpine
@@ -394,10 +422,16 @@ services:
     networks:
       - dam-network
     depends_on:
-      - auth
-      - upload
-      - asset
-      - web
+      auth:
+        condition: service_healthy
+      upload:
+        condition: service_healthy
+      asset:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+      web:
+        condition: service_healthy
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:

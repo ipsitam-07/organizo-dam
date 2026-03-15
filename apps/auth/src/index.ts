@@ -6,11 +6,10 @@ import { connectRedis } from "@repo/auth";
 import { initDb } from "@repo/database";
 import authRoutes from "./routes/auth.route";
 import { errorHandler } from "./middleware/error.middleware";
-import yaml from "js-yaml";
-import fs from "fs";
 import path from "path";
 import helmet from "helmet";
 import { authLimiter } from "@repo/rate-limit";
+import { buildSwaggerDoc, authSchemas, authPaths } from "@repo/docs";
 
 export const app = express();
 
@@ -27,17 +26,18 @@ app.use((req, _res, next) => {
   next();
 });
 
-let swaggerDoc;
-try {
-  swaggerDoc = yaml.load(fs.readFileSync(swaggerPath, "utf8"));
-} catch (err) {
-  logger.error("Failed to load swagger.", err);
-}
+const swaggerDoc = buildSwaggerDoc({
+  title: "Organizo DAM — Auth Service",
+  description:
+    "Authentication API: registration, login, logout, and current-user retrieval.\n\n" +
+    "All protected endpoints require a Bearer JWT issued by `POST /api/auth/login`.",
+  serverUrl: `http://localhost:${config.ports.auth}`,
+  serverDescription: "Auth service",
+  schemas: { ...authSchemas },
+  paths: { ...authPaths },
+});
 
-if (swaggerDoc) {
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
-}
-
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 //Routes
 app.use("/api/auth", authLimiter, authRoutes);
 
@@ -63,9 +63,6 @@ const startServer = async () => {
 
     app.listen(config.ports.auth, () => {
       logger.info(`[API Gateway] Listening on port ${config.ports.auth}`);
-      logger.info(
-        `[Swagger UI] Available at http://localhost:${config.ports.auth}/api-docs`
-      );
     });
   } catch (error) {
     logger.error("[API Gateway] Failed to start:", { error });

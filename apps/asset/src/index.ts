@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
 import { errorHandler } from "./middleware/error.middleware";
@@ -13,6 +14,12 @@ import { handleJobEvent } from "./services/job-events.service";
 import { apiLimiter, shareLimiter } from "@repo/rate-limit";
 import { Op } from "sequelize";
 import { queueLengthGauge, registry } from "./metric";
+import {
+  buildSwaggerDoc,
+  assetSchemas,
+  assetPaths,
+  sharePaths,
+} from "@repo/docs";
 
 export const app = express();
 app.use(helmet());
@@ -31,6 +38,19 @@ app.use((req, _res, next) => {
   logger.info(`[${req.method}] ${req.path}`);
   next();
 });
+
+const swaggerDoc = buildSwaggerDoc({
+  title: "Organizo DAM — Asset Service",
+  description:
+    "Asset management API: list, retrieve, delete, download, tags, share links, and processing status.\n\n" +
+    "All endpoints require a Bearer JWT unless otherwise noted.",
+  serverUrl: `http://localhost:${config.ports.asset}`,
+  serverDescription: "Asset service",
+  schemas: { ...assetSchemas },
+  paths: { ...assetPaths, ...sharePaths },
+});
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 //Health check route
 app.get("/health/asset", (_req, res) => {
