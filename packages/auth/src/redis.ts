@@ -1,8 +1,8 @@
-import { createClient } from "redis";
+import { createClient, RedisClientType } from "redis";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
 
-export const redisClient = createClient({
+export const redisClient: RedisClientType = createClient({
   url: `redis://:${config.redis.password}@${config.redis.host}:${config.redis.port}`,
 });
 

@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsup src/index.ts --format cjs"
+    "build": "tsup src/index.ts --format cjs --dts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
