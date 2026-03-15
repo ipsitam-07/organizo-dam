@@ -326,6 +326,9 @@ importers:
       helmet:
         specifier: ^8.0.0
         version: 8.1.0
+      sequelize:
+        specifier: ^6.37.1
+        version: 6.37.7(pg-hstore@2.3.4)(pg@8.18.0)
       swagger-ui-express:
         specifier: ^5.0.1
         version: 5.0.1(express@4.22.1)

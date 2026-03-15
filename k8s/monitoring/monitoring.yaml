@@ -14,14 +14,13 @@ spec:
   endpoints:
     - port: metrics
       path: /metrics
-      interval: 15s      
+      interval: 15s
       scrapeTimeout: 10s
   namespaceSelector:
     matchNames:
       - dam-platform
 
 ---
-
 #Service Monitor: (Service C)
 #Metrics from every asset service pod
 apiVersion: monitoring.coreos.com/v1
@@ -68,7 +67,6 @@ spec:
       - dam-platform
 
 ---
-
 #PrometheusRule: AlertingRules
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule

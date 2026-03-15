@@ -22,14 +22,14 @@ spec:
 
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 30   
+      stabilizationWindowSeconds: 30
       policies:
         - type: Pods
-          value: 2                     
+          value: 2
           periodSeconds: 60
     scaleDown:
-      stabilizationWindowSeconds: 300  
+      stabilizationWindowSeconds: 300
       policies:
         - type: Pods
-          value: 1                      
+          value: 1
           periodSeconds: 60
