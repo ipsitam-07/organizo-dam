@@ -17,7 +17,7 @@ vi.mock("sonner", () => ({
 }));
 
 import { assetsApi } from "../../src/services/asset.service";
-import { DetailModal } from "../../src/components/dashboard/DetailModal";
+import { DetailModal } from "../../src/components/dashboard/detail-modal/DetailModal";
 
 const mockAsset = {
   id: "asset-1",

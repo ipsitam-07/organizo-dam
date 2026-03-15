@@ -2,8 +2,8 @@ import { useCallback, useRef, useState } from "react";
 import { FileUp, CheckCircle2, AlertCircle, Loader2, File } from "lucide-react";
 import { useUpload } from "@/hooks/useUpload";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { formatBytes } from "@/lib/utils";
+import { cn } from "@/utils/utility";
+import { formatBytes } from "@/utils/utility";
 import { MAX_FILES, UI_STRINGS } from "@/constants/ui.constants";
 
 export function UploadModal({ onClose }: { onClose: () => void }) {

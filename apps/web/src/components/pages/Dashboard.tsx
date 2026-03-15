@@ -18,19 +18,19 @@ import { useAssets, useAssetStats } from "@/hooks/useAsset";
 import { UIProvider, useUI } from "@/store/ui";
 import { AssetCard } from "@/components/dashboard/AssetCard";
 import { UploadModal } from "@/components/dashboard/UploadModal";
-import { DetailModal } from "@/components/dashboard/DetailModal";
+import { DetailModal } from "@/components/dashboard/detail-modal/DetailModal";
 import { ShareModal } from "@/components/dashboard/ShareModal";
 import { DeleteModal } from "@/components/dashboard/DeleteModal";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes } from "@/utils/utility";
 import { assetsApi } from "@/services/asset.service";
 import type { AssetStatus, AssetListParams, Asset } from "@/types/asset.types";
 import type { ListViewProps } from "@/types/props.types";
 import { APP_NAME } from "@/constants";
 import { UI_STRINGS } from "@/constants/ui.constants";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utility";
 import { useAuth } from "@/context/AuthContext";
 
 export function Dashboard() {
