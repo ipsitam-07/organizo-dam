@@ -14,14 +14,14 @@ export function useDeleteAsset() {
       });
       qc.setQueriesData<AssetListResponse>(
         { queryKey: queryKeys.assets.all() },
-        (old) =>
-          old
-            ? {
-                ...old,
-                data: old.data.filter((a) => a.id !== id),
-                total: old.total - 1,
-              }
-            : old
+        (old) => {
+          if (!old || !Array.isArray(old.data)) return old;
+          return {
+            ...old,
+            data: old.data.filter((a) => a.id !== id),
+            total: old.total - 1,
+          };
+        }
       );
       return { snapshots };
     },
