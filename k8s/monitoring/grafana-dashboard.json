@@ -62,7 +62,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(rate(jobs_processed_total{namespace=\"dam-platform\"}[1m])) by (pod)",
+          "expr": "sum(rate(job_processed_total{namespace=\"dam-platform\"}[1m])) by (pod)",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -151,7 +151,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "sum(jobs_processed_total{namespace=\"dam-platform\"})",
+          "expr": "sum(job_processed_total{namespace=\"dam-platform\"})",
           "legendFormat": "Total",
           "refId": "A"
         }
@@ -219,7 +219,7 @@
         },
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "total_jobs_completed{namespace=\"dam-platform\"}",
+          "expr": "total_jobs_completed",
           "legendFormat": "Completed",
           "refId": "B"
         }
@@ -335,7 +335,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "kube_horizontalpodautoscaler_status_target_metric_value{horizontalpodautoscaler=\"workers-hpa\", namespace=\"dam-platform\"} / 100",
+          "expr": "kube_horizontalpodautoscaler_status_target_metric_utilization{horizontalpodautoscaler=\"workers-hpa\", namespace=\"dam-platform\"} / 100",
           "legendFormat": "Current CPU Utilization",
           "refId": "A"
         }
