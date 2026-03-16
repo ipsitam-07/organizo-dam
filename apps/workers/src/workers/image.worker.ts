@@ -38,7 +38,7 @@ export class ImageWorker extends BaseWorker {
   async process(
     payload: UploadCompletePayload,
     job: ProcessingJob
-  ): Promise<void> {
+  ): Promise<string | void> {
     const { assetId } = payload;
 
     const asset = await Asset.findByPk(assetId);
@@ -124,14 +124,6 @@ export class ImageWorker extends BaseWorker {
           { where: { id: renditionId } }
         );
 
-        await this.publishResult(
-          assetId,
-          job.id,
-          "completed",
-          undefined,
-          renditionId
-        );
-
         logger.info(
           `[ImageWorker] ${spec.label} done — ${(resized.length / 1024).toFixed(0)}KB for asset="${assetId}"`
         );
@@ -149,5 +141,9 @@ export class ImageWorker extends BaseWorker {
     }
 
     logger.info(`[ImageWorker] All renditions done for asset="${assetId}"`);
+    const lastRenditionId = await job
+      .reload()
+      .then((j) => (j as any).rendition_id);
+    return lastRenditionId ?? undefined;
   }
 }

@@ -31,7 +31,7 @@ export class DocumentWorker extends BaseWorker {
   async process(
     payload: UploadCompletePayload,
     job: ProcessingJob
-  ): Promise<void> {
+  ): Promise<string | void> {
     const { assetId } = payload;
 
     const asset = await Asset.findByPk(assetId);
@@ -81,18 +81,11 @@ export class DocumentWorker extends BaseWorker {
         { where: { id: renditionId } }
       );
 
-      await this.publishResult(
-        assetId,
-        job.id,
-        "completed",
-        undefined,
-        renditionId
-      );
-
       logger.info(`[DocumentWorker] Done — ${pageCount} page`);
+      return renditionId;
     } catch (err: any) {
       logger.warn(
-        `[DocumentWorker] Preview failed for asset="${assetId}". Error: ${err.message}. `
+        `[DocumentWorker] Preview failed for asset="${assetId}". Error: ${err.message}. Asset will still be marked ready.`
       );
 
       await AssetMetadata.upsert({
@@ -105,8 +98,6 @@ export class DocumentWorker extends BaseWorker {
         { status: "failed" },
         { where: { id: renditionId } }
       );
-
-      await this.publishResult(assetId, job.id, "completed");
     }
   }
 }

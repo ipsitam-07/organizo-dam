@@ -9,6 +9,7 @@ import { logger } from "@repo/logger";
 import { BaseWorker } from "./base.worker";
 import { WORKER_QUEUES, WORKER_ROUTING_KEYS } from "../utils/constants";
 import {
+  downloadObjectToFile,
   getObjectBuffer,
   putObject,
   buckets,
@@ -16,7 +17,7 @@ import {
 import { extractThumbnail } from "../services/ffmpeg.service";
 import { resizeImage } from "../services/sharp.service";
 import {
-  writeTempFile,
+  allocateTempPath,
   cleanTempFile,
   readFile,
   getFileSize,
@@ -39,16 +40,16 @@ export class ThumbnailWorker extends BaseWorker {
   async process(
     payload: UploadCompletePayload,
     job: ProcessingJob
-  ): Promise<void> {
+  ): Promise<string | void> {
     const { assetId } = payload;
 
     const asset = await Asset.findByPk(assetId);
     if (!asset) throw new Error(`Asset ${assetId} not found`);
 
     if (isTranscodableVideo(asset.mime_type)) {
-      await this.processVideoThumbnail(assetId, asset, job);
+      return await this.processVideoThumbnail(assetId, asset, job);
     } else if (isImageType(asset.mime_type)) {
-      await this.processImageThumbnail(assetId, asset, job);
+      return await this.processImageThumbnail(assetId, asset, job);
     } else {
       logger.info(
         `[ThumbnailWorker] Skipping — unsupported mime="${asset.mime_type}"`
@@ -62,15 +63,16 @@ export class ThumbnailWorker extends BaseWorker {
     assetId: string,
     asset: any,
     job: ProcessingJob
-  ): Promise<void> {
+  ): Promise<string> {
     await this.updateProgress(job, 10);
 
     const meta = await AssetMetadata.findOne({ where: { asset_id: assetId } });
     const duration = meta?.duration_secs ?? 10;
 
+    // Stream directly from MinIO to disk
     const ext = mimeToExtension(asset.mime_type);
-    const buffer = await getObjectBuffer(buckets.assets, asset.storage_key);
-    const tempInput = await writeTempFile(buffer, ext);
+    const tempInput = allocateTempPath(ext);
+    await downloadObjectToFile(buckets.assets, asset.storage_key, tempInput);
 
     await this.updateProgress(job, 30);
 
@@ -106,17 +108,11 @@ export class ThumbnailWorker extends BaseWorker {
       const renditionId = (rendition as AssetRendition).id;
 
       await job.update({ rendition_id: renditionId });
-      await this.publishResult(
-        assetId,
-        job.id,
-        "completed",
-        undefined,
-        renditionId
-      );
 
       logger.info(
         `[ThumbnailWorker] Video thumbnail done — ${(thumbSize / 1024).toFixed(0)}KB for asset="${assetId}"`
       );
+      return renditionId;
     } finally {
       await cleanTempFile(tempInput);
       if (tempThumb) await cleanTempFile(tempThumb);
@@ -129,7 +125,7 @@ export class ThumbnailWorker extends BaseWorker {
     assetId: string,
     asset: any,
     job: ProcessingJob
-  ): Promise<void> {
+  ): Promise<string> {
     await this.updateProgress(job, 20);
 
     const buffer = await getObjectBuffer(buckets.assets, asset.storage_key);
@@ -163,16 +159,10 @@ export class ThumbnailWorker extends BaseWorker {
     const renditionId = (rendition as AssetRendition).id;
 
     await job.update({ rendition_id: renditionId });
-    await this.publishResult(
-      assetId,
-      job.id,
-      "completed",
-      undefined,
-      renditionId
-    );
 
     logger.info(
       `[ThumbnailWorker] Image thumbnail done — ${(thumbBuffer.length / 1024).toFixed(0)}KB for asset="${assetId}"`
     );
+    return renditionId;
   }
 }

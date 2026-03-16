@@ -1,6 +1,6 @@
 import type { AssetRenditionWithUrl } from "@/types/asset.types";
 
-const QUALITY_ORDER = ["1080p", "720p", "480p", "360p", "240p"];
+const QUALITY_ORDER = ["1080p", "720p", "360p"];
 
 export function sortVideoRenditions(renditions: AssetRenditionWithUrl[]) {
   return [...renditions].sort((a, b) => {

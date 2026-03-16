@@ -48,10 +48,10 @@ export function extractThumbnail(
 
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
-      .seekInput(seekTime)
+      .inputOptions([`-ss ${seekTime}`])
       .frames(1)
       .output(outputPath)
-      .outputOptions(["-vf scale=640:-1", "-q:v 3"])
+      .outputOptions(["-vf scale=640:-1", "-q:v 3", "-vcodec mjpeg"])
       .on("end", () => {
         logger.info(`[FFmpeg] Thumbnail → ${outputPath}`);
         resolve(outputPath);
@@ -84,9 +84,10 @@ export function transcodeVideo(
         `-vf scale=-2:${profile.height}`,
         `-b:v ${profile.videoBitrate}`,
         `-b:a ${profile.audioBitrate}`,
-        "-preset fast",
+        "-preset ultrafast",
         "-movflags faststart",
         "-pix_fmt yuv420p",
+        "-threads 0",
       ])
       .on("progress", (p) => {
         if (onProgress && p.percent) onProgress(Math.round(p.percent));

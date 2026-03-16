@@ -14,6 +14,37 @@ import {
   isDocumentType,
 } from "../utils/temp";
 
+const JOB_META: Record<
+  string,
+  { queue: string; routingKey: string; exchange: string }
+> = {
+  metadata: {
+    exchange: EXCHANGES.UPLOADS,
+    routingKey: WORKER_ROUTING_KEYS.PROCESS_METADATA,
+    queue: WORKER_QUEUES.METADATA,
+  },
+  thumbnail: {
+    exchange: EXCHANGES.UPLOADS,
+    routingKey: WORKER_ROUTING_KEYS.PROCESS_THUMBNAIL,
+    queue: WORKER_QUEUES.THUMBNAIL,
+  },
+  transcode: {
+    exchange: EXCHANGES.UPLOADS,
+    routingKey: WORKER_ROUTING_KEYS.PROCESS_TRANSCODE,
+    queue: WORKER_QUEUES.TRANSCODE,
+  },
+  image: {
+    exchange: EXCHANGES.UPLOADS,
+    routingKey: WORKER_ROUTING_KEYS.PROCESS_IMAGE,
+    queue: WORKER_QUEUES.IMAGE,
+  },
+  document: {
+    exchange: EXCHANGES.UPLOADS,
+    routingKey: WORKER_ROUTING_KEYS.PROCESS_DOCUMENT,
+    queue: WORKER_QUEUES.DOCUMENT,
+  },
+};
+
 export class AssemblyWorker extends BaseWorker {
   constructor() {
     super(
@@ -26,27 +57,22 @@ export class AssemblyWorker extends BaseWorker {
 
   async process(
     payload: UploadCompletePayload,
-    job: ProcessingJob
+    _job: ProcessingJob
   ): Promise<void> {
     const { assetId, storageKey, uploadSessionId, userId } = payload;
 
     logger.info(
       `[AssemblyWorker] Assembling asset="${assetId}" from storageKey="${storageKey}"`
     );
-    await this.updateProgress(job, 10);
 
     await copyToAssets(storageKey, assetId);
-    await this.updateProgress(job, 60);
-
     await Asset.update({ storage_key: assetId }, { where: { id: assetId } });
-    await this.updateProgress(job, 80);
+
     try {
       await deleteObject(buckets.chunks, storageKey);
     } catch (err: any) {
       logger.warn(`[AssemblyWorker] Chunk delete failed: ${err.message}`);
     }
-
-    await this.updateProgress(job, 90);
 
     const asset = await Asset.findByPk(assetId);
     if (!asset) throw new Error(`Asset ${assetId} not found after copy`);
@@ -59,76 +85,62 @@ export class AssemblyWorker extends BaseWorker {
       storageKey: assetId,
     };
 
-    const publishTasks: Promise<void>[] = [];
-
+    let jobTypes: string[];
     if (isTranscodableVideo(mime)) {
-      publishTasks.push(
-        this.rabbit.publish(
-          EXCHANGES.UPLOADS,
-          WORKER_ROUTING_KEYS.PROCESS_METADATA,
-          followOnPayload
-        ),
-        this.rabbit.publish(
-          EXCHANGES.UPLOADS,
-          WORKER_ROUTING_KEYS.PROCESS_THUMBNAIL,
-          followOnPayload
-        ),
-        this.rabbit.publish(
-          EXCHANGES.UPLOADS,
-          WORKER_ROUTING_KEYS.PROCESS_TRANSCODE,
-          followOnPayload
-        )
-      );
-      logger.info(
-        `[AssemblyWorker] Video fan-out: metadata + thumbnail + transcode`
-      );
+      jobTypes = ["metadata", "thumbnail", "transcode"];
+      logger.info(`[AssemblyWorker] Video fan-out: ${jobTypes.join(" + ")}`);
     } else if (mime.startsWith("audio/")) {
-      publishTasks.push(
-        this.rabbit.publish(
-          EXCHANGES.UPLOADS,
-          WORKER_ROUTING_KEYS.PROCESS_METADATA,
-          followOnPayload
-        )
-      );
+      jobTypes = ["metadata"];
       logger.info(`[AssemblyWorker] Audio fan-out: metadata`);
     } else if (isImageType(mime)) {
-      publishTasks.push(
-        this.rabbit.publish(
-          EXCHANGES.UPLOADS,
-          WORKER_ROUTING_KEYS.PROCESS_IMAGE,
-          followOnPayload
-        )
-      );
+      jobTypes = ["image"];
       logger.info(`[AssemblyWorker] Image fan-out: image`);
     } else if (isDocumentType(mime)) {
-      // Document
-      publishTasks.push(
-        this.rabbit.publish(
-          EXCHANGES.UPLOADS,
-          WORKER_ROUTING_KEYS.PROCESS_DOCUMENT,
-          followOnPayload
-        )
-      );
+      jobTypes = ["document"];
       logger.info(`[AssemblyWorker] Document fan-out: document`);
     } else {
-      // Unknown type
-      publishTasks.push(
-        this.rabbit.publish(
-          EXCHANGES.UPLOADS,
-          WORKER_ROUTING_KEYS.PROCESS_METADATA,
-          followOnPayload
-        )
-      );
-      logger.info(
-        `[AssemblyWorker] Unknown mime="${mime}" fan-out: metadata (stub)`
-      );
+      jobTypes = ["metadata"];
+      logger.info(`[AssemblyWorker] Unknown mime="${mime}" fan-out: metadata`);
     }
 
-    await Promise.all(publishTasks);
+    const messageId = crypto.randomUUID();
+    const preCreatedJobs = await Promise.all(
+      jobTypes.map((jobType) => {
+        const meta = JOB_META[jobType];
+        return ProcessingJob.create({
+          asset_id: assetId,
+          amqp_message_id: `${messageId}-${jobType}`,
+          amqp_exchange: meta.exchange,
+          amqp_routing_key: meta.routingKey,
+          amqp_queue: meta.queue,
+          amqp_delivery_tag: null,
+          job_type: jobType,
+          status: "queued",
+          attempts: 1,
+          max_attempts: 3,
+        });
+      })
+    );
+
+    logger.info(
+      `[AssemblyWorker] Pre-created ${preCreatedJobs.length} job row(s) for asset="${assetId}"`
+    );
+
+    await Promise.all(
+      jobTypes.map((jobType) => {
+        const meta = JOB_META[jobType];
+        return this.rabbit.publish(
+          meta.exchange,
+          meta.routingKey,
+          followOnPayload
+        );
+      })
+    );
+
     logger.info(`[AssemblyWorker] Fan-out complete for asset="${assetId}"`);
   }
 
   protected async publishResult(): Promise<void> {
-    // intentional no-op
+    // intentional no-op — assembly does not emit job-completed events
   }
 }

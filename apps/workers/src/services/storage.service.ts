@@ -6,9 +6,13 @@ import {
   HeadObjectCommand,
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
-import { Readable } from "stream";
+import { Readable, pipeline } from "stream";
+import { createWriteStream } from "fs";
+import { promisify } from "util";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
+
+const pipelineAsync = promisify(pipeline);
 
 const s3 = new S3Client({
   endpoint: `http://${config.minio.endpoint}`,
@@ -41,6 +45,17 @@ export async function deleteObject(bucket: string, key: string): Promise<void> {
   logger.info(`[Storage] Deleted "${key}" from "${bucket}"`);
 }
 
+export async function downloadObjectToFile(
+  bucket: string,
+  key: string,
+  destPath: string
+): Promise<void> {
+  const res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  const stream = res.Body as Readable;
+  await pipelineAsync(stream, createWriteStream(destPath));
+  logger.info(`[Storage] Streamed "${key}" → "${destPath}"`);
+}
+
 export async function getObjectBuffer(
   bucket: string,
   key: string
@@ -53,6 +68,27 @@ export async function getObjectBuffer(
     stream.on("end", () => resolve(Buffer.concat(parts)));
     stream.on("error", reject);
   });
+}
+
+export async function uploadFileFromDisk(
+  bucket: string,
+  key: string,
+  filePath: string,
+  contentType: string
+): Promise<void> {
+  const { createReadStream } = await import("fs");
+  const { stat } = await import("fs/promises");
+  const { size } = await stat(filePath);
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: createReadStream(filePath),
+      ContentType: contentType,
+      ContentLength: size,
+    })
+  );
+  logger.info(`[Storage] Uploaded "${filePath}" → "${bucket}/${key}"`);
 }
 
 export async function putObject(
