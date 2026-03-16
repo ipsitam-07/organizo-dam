@@ -431,31 +431,31 @@ docker exec dam-workers ffmpeg -version
 ## UI Screenshots
 
 1. Dashboard (Grid View)
-   ![alt text](<Screenshot 2026-03-16 at 10.31.44 AM.png>)
+   ![![alt text](<Screenshot 2026-03-16 at 10.31.44 AM.png>)](<public/Screenshot 2026-03-16 at 10.31.44 AM.png>)
 
 2. Dashboard (List View)
-   ![](<Screenshot 2026-03-16 at 10.33.41 AM.png>)
+   ![![](<Screenshot 2026-03-16 at 10.33.41 AM.png>)](<public/Screenshot 2026-03-16 at 10.33.41 AM.png>)
 
 3. Dashboard (with Search filter)
-   ![alt text](<Screenshot 2026-03-16 at 10.31.57 AM.png>)
+   ![![alt text](<Screenshot 2026-03-16 at 10.31.57 AM.png>)](<public/Screenshot 2026-03-16 at 10.31.57 AM.png>)
 
 4. Asset Previews (download, share, delete)
-   ![alt text](<Screenshot 2026-03-16 at 10.31.02 AM.png>)
+   ![![alt text](<Screenshot 2026-03-16 at 10.31.02 AM.png>)](<public/Screenshot 2026-03-16 at 10.31.02 AM.png>)
 
-![alt text](<Screenshot 2026-03-16 at 10.31.12 AM.png>)
+![![alt text](<Screenshot 2026-03-16 at 10.31.12 AM.png>)](<public/Screenshot 2026-03-16 at 10.31.12 AM.png>)
 
-![alt text](<Screenshot 2026-03-16 at 10.31.20 AM.png>)
+![![alt text](<Screenshot 2026-03-16 at 10.31.20 AM.png>)](<public/Screenshot 2026-03-16 at 10.31.20 AM.png>)
 
-![alt text](<Screenshot 2026-03-16 at 10.31.27 AM.png>)
+![![alt text](<Screenshot 2026-03-16 at 10.31.27 AM.png>)](<public/Screenshot 2026-03-16 at 10.31.27 AM.png>)
 
-![alt text](<Screenshot 2026-03-16 at 10.31.36 AM.png>)
+![![alt text](<Screenshot 2026-03-16 at 10.31.36 AM.png>)](<public/Screenshot 2026-03-16 at 10.31.36 AM.png>)
 
-![alt text](<Screenshot 2026-03-16 at 10.32.11 AM.png>)
+![![alt text](<Screenshot 2026-03-16 at 10.32.11 AM.png>)](<public/Screenshot 2026-03-16 at 10.32.11 AM.png>)
 
 5. Upload file modal
-   ![alt text](<Screenshot 2026-03-16 at 10.32.17 AM.png>)
+   ![![alt text](<Screenshot 2026-03-16 at 10.32.17 AM.png>)](<public/Screenshot 2026-03-16 at 10.32.17 AM.png>)
 
-![alt text](<Screenshot 2026-03-16 at 10.32.43 AM.png>)
+![![alt text](<Screenshot 2026-03-16 at 10.32.43 AM.png>)](<public/Screenshot 2026-03-16 at 10.32.43 AM.png>)
 
 ## License
 
