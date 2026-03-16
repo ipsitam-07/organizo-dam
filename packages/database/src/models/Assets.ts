@@ -1,17 +1,29 @@
-import { DataTypes, Model } from "sequelize";
+import {
+  DataTypes,
+  Model,
+  InferAttributes,
+  InferCreationAttributes,
+  CreationOptional,
+  NonAttribute,
+} from "sequelize";
 
-export class Asset extends Model {
-  declare id: string;
+export class Asset extends Model<
+  InferAttributes<Asset>,
+  InferCreationAttributes<Asset>
+> {
+  declare id: CreationOptional<string>;
   declare user_id: string;
   declare upload_session_id: string | null;
   declare original_filename: string;
   declare storage_key: string;
   declare mime_type: string;
   declare size_bytes: number;
-  declare status: "queued" | "processing" | "ready" | "failed";
-  declare download_count: number;
-  declare readonly created_at: Date;
-  declare readonly updated_at: Date;
+  declare status: CreationOptional<
+    "queued" | "processing" | "ready" | "failed"
+  >;
+  declare download_count: CreationOptional<number>;
+  declare readonly created_at: NonAttribute<Date>;
+  declare readonly updated_at: NonAttribute<Date>;
 
   static initialize(sequelize: any) {
     this.init(
@@ -67,6 +79,18 @@ export class Asset extends Model {
             unique: true,
             fields: ["storage_key"],
             name: "assets_storage_key_unique",
+          },
+          {
+            fields: ["user_id", "created_at"],
+            name: "idx_assets_user_created",
+          },
+          {
+            fields: ["user_id", "status"],
+            name: "idx_assets_user_status",
+          },
+          {
+            fields: ["status", "created_at"],
+            name: "idx_assets_status_created",
           },
         ],
       }

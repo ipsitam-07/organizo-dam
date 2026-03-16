@@ -7,6 +7,7 @@ import { config } from "@repo/config";
 import { deleteObject, getPresignedUrl } from "../services/storage.service";
 import { logger } from "@repo/logger";
 import { attachTag, autoTagAsset } from "./tag.service";
+import { DEFAULT_EXPIRY_SECONDS } from "../constants/constants";
 
 export class AssetService {
   //list of assets
@@ -26,14 +27,26 @@ export class AssetService {
     const asset = await assetRepository.findByIdAndUser(assetId, userId);
     if (!asset) throw new NotFoundError("Asset not found");
 
-    // Delete original
+    const renditions = await assetRepository.findAllRenditions(assetId);
+    await Promise.all(
+      renditions.map((r) =>
+        deleteObject(config.minio.buckets.renditions, r.storage_key).catch(
+          (err) =>
+            logger.warn(
+              `[AssetService] Failed to delete rendition "${r.storage_key}" from MinIO: ${err.message}`
+            )
+        )
+      )
+    );
+
+    // Delete the original file
     await deleteObject(config.minio.buckets.assets, asset.storage_key);
 
-    // Destroy the DB row
+    // Destroy the DB row (cascades to asset_renditions, processing_jobs, etc.)
     await asset.destroy();
 
     logger.info(
-      `[AssetService] Deleted asset "${assetId}" for user "${userId}"`
+      `[AssetService] Deleted asset "${assetId}" (${renditions.length} rendition(s) cleaned up) for user "${userId}"`
     );
   }
 
@@ -41,7 +54,8 @@ export class AssetService {
     assetId: string,
     userId: string,
     renditionLabel?: string,
-    request?: { ip?: string; userAgent?: string }
+    request?: { ip?: string; userAgent?: string },
+    forPreview = false
   ) {
     const asset = await assetRepository.findByIdAndUser(assetId, userId);
     if (!asset) throw new NotFoundError("Asset not found");
@@ -64,7 +78,12 @@ export class AssetService {
       renditionId = rendition.id;
     }
 
-    const url = await getPresignedUrl(bucket, storageKey);
+    const url = await getPresignedUrl(
+      bucket,
+      storageKey,
+      DEFAULT_EXPIRY_SECONDS,
+      forPreview
+    );
 
     // Log the download
     await assetRepository.logDownload({
@@ -96,7 +115,8 @@ export class AssetService {
     const url = await getPresignedUrl(
       config.minio.buckets.renditions,
       thumbnail.storage_key,
-      3600
+      3600,
+      true
     );
     return url;
   }
@@ -196,6 +216,26 @@ export class AssetService {
       max_downloads: data.max_downloads,
       expires_at,
     });
+  }
+
+  async revokeShareLink(
+    assetId: string,
+    linkId: string,
+    userId: string
+  ): Promise<void> {
+    const asset = await assetRepository.findByIdAndUser(assetId, userId);
+    if (!asset) throw new NotFoundError("Asset not found");
+
+    const deleted = await assetRepository.deleteShareLink(
+      linkId,
+      assetId,
+      userId
+    );
+    if (deleted === 0) throw new NotFoundError("Share link not found");
+
+    logger.info(
+      `[AssetService] Revoked share link "${linkId}" for asset "${assetId}"`
+    );
   }
 
   async resolveShareLink(

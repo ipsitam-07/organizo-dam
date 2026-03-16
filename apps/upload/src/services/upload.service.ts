@@ -1,4 +1,4 @@
-import { NotFoundError, UnauthorizedError } from "@repo/auth";
+import { ConflictError, NotFoundError, UnauthorizedError } from "@repo/auth";
 import { uploadRepository } from "../repo/upload.repo";
 import { logger } from "@repo/logger";
 
@@ -60,22 +60,34 @@ export class UploadService {
   //get seesion by id
   async getSessionById(sessionId: string, userId: string) {
     if (!userId) throw new UnauthorizedError("Unauthorized");
-    if (!sessionId) throw new NotFoundError("Session not found or expired");
-    return await uploadRepository.findSessionByIdAndUser(sessionId, userId);
-  }
 
-  //cancel a session for an user
-  async cancelSession(sessionId: string, userId: string) {
-    if (!userId) throw new UnauthorizedError("Unauthorized");
-    if (!sessionId) throw new NotFoundError("Session not found or expired");
     const session = await uploadRepository.findSessionByIdAndUser(
       sessionId,
       userId
     );
 
-    if (!session) return null;
+    if (!session) {
+      throw new NotFoundError("Session not found or expired");
+    }
+
+    return session;
+  }
+
+  //cancel a session for an user
+  async cancelSession(sessionId: string, userId: string) {
+    if (!userId) throw new UnauthorizedError("Unauthorized");
+
+    const session = await uploadRepository.findSessionByIdAndUser(
+      sessionId,
+      userId
+    );
+
+    if (!session) {
+      throw new NotFoundError("Session not found or expired");
+    }
+
     if (session.status === "complete") {
-      throw new Error("Cannot cancel a completed upload");
+      throw new ConflictError("Cannot cancel a completed upload");
     }
 
     return await uploadRepository.updateSessionStatus(session, "failed");

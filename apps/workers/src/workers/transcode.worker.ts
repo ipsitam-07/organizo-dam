@@ -9,17 +9,16 @@ import { logger } from "@repo/logger";
 import { BaseWorker } from "./base.worker";
 import { WORKER_QUEUES, WORKER_ROUTING_KEYS } from "../utils/constants";
 import {
-  getObjectBuffer,
-  putObject,
+  downloadObjectToFile,
+  uploadFileFromDisk,
   buckets,
 } from "../services/storage.service";
 import { transcodeVideo } from "../services/ffmpeg.service";
 import { TranscodeProfile } from "../interfaces/interfaces";
 import { TRANSCODE_PROFILES } from "../utils/constants";
 import {
-  writeTempFile,
+  allocateTempPath,
   cleanTempFile,
-  readFile,
   getFileSize,
   mimeToExtension,
   isTranscodableVideo,
@@ -38,7 +37,7 @@ export class TranscodeWorker extends BaseWorker {
   async process(
     payload: UploadCompletePayload,
     job: ProcessingJob
-  ): Promise<void> {
+  ): Promise<string | void> {
     const { assetId } = payload;
 
     const asset = await Asset.findByPk(assetId);
@@ -53,33 +52,37 @@ export class TranscodeWorker extends BaseWorker {
 
     await this.updateProgress(job, 5);
 
-    // Get source height
     const meta = await AssetMetadata.findOne({ where: { asset_id: assetId } });
     const sourceHeight = meta?.height ?? 9999;
 
+    // Only run profiles that fit the source — never upscale.
+    // All applicable profiles run sequentially. Sequential is faster than
+    // parallel when the CPU is the bottleneck (software libx264) because
+    // concurrent processes share cores and each ends up taking ~3× longer.
     const profilesToRun = TRANSCODE_PROFILES.filter(
       (p) => p.height <= sourceHeight
     );
 
     if (profilesToRun.length === 0) {
       logger.info(
-        `[TranscodeWorker] Source ${sourceHeight}px. all profiles skipped (no upscaling)`
+        `[TranscodeWorker] Source ${sourceHeight}px — all profiles skipped`
       );
       return;
     }
 
     logger.info(
-      `[TranscodeWorker] Running ${profilesToRun.map((p) => p.label).join(", ")} for asset="${assetId}"`
+      `[TranscodeWorker] Running [${profilesToRun.map((p) => p.label).join(", ")}] sequentially for asset="${assetId}"`
     );
 
-    // Download source video
+    // Stream from MinIO to disk — no full-file RAM allocation
     const ext = mimeToExtension(asset.mime_type);
-    const buffer = await getObjectBuffer(buckets.assets, asset.storage_key);
-    const tempInput = await writeTempFile(buffer, ext);
+    const tempInput = allocateTempPath(ext);
+    await downloadObjectToFile(buckets.assets, asset.storage_key, tempInput);
 
     await this.updateProgress(job, 10);
 
     const tempOutputPaths: string[] = [];
+    let lastRenditionId: string | undefined;
 
     try {
       for (let i = 0; i < profilesToRun.length; i++) {
@@ -87,7 +90,7 @@ export class TranscodeWorker extends BaseWorker {
         const progStart = 10 + Math.round((i / profilesToRun.length) * 85);
         const progEnd = 10 + Math.round(((i + 1) / profilesToRun.length) * 85);
 
-        const tempOut = await this.transcodeProfile(
+        const result = await this.transcodeProfile(
           assetId,
           tempInput,
           profile,
@@ -95,7 +98,10 @@ export class TranscodeWorker extends BaseWorker {
           progStart,
           progEnd
         );
-        if (tempOut) tempOutputPaths.push(tempOut);
+        if (result) {
+          tempOutputPaths.push(result.tempPath);
+          lastRenditionId = result.renditionId;
+        }
       }
 
       logger.info(`[TranscodeWorker] All profiles done for asset="${assetId}"`);
@@ -103,9 +109,9 @@ export class TranscodeWorker extends BaseWorker {
       await cleanTempFile(tempInput);
       for (const p of tempOutputPaths) await cleanTempFile(p);
     }
-  }
 
-  // Run a transcode profile
+    return lastRenditionId;
+  }
 
   private async transcodeProfile(
     assetId: string,
@@ -114,7 +120,7 @@ export class TranscodeWorker extends BaseWorker {
     job: ProcessingJob,
     progStart: number,
     progEnd: number
-  ): Promise<string | null> {
+  ): Promise<{ tempPath: string; renditionId: string } | null> {
     const storageKey = `${assetId}/${profile.label}.mp4`;
 
     logger.info(
@@ -143,24 +149,27 @@ export class TranscodeWorker extends BaseWorker {
 
       tempOutput = await transcodeVideo(tempInput, profile, onProgress);
 
-      const outBuffer = await readFile(tempOutput);
       const outSize = await getFileSize(tempOutput);
 
-      await putObject(buckets.renditions, storageKey, outBuffer, "video/mp4");
+      // Stream output file to MinIO — no second full-file RAM allocation
+      await uploadFileFromDisk(
+        buckets.renditions,
+        storageKey,
+        tempOutput,
+        "video/mp4"
+      );
 
       await AssetRendition.update(
-        {
-          status: "ready",
-          size_bytes: outSize,
-          height: profile.height,
-        },
+        { status: "ready", size_bytes: outSize, height: profile.height },
         { where: { id: renditionId } }
       );
+
+      await job.update({ rendition_id: renditionId });
 
       logger.info(
         `[TranscodeWorker] ${profile.label} done — ${(outSize / 1024 / 1024).toFixed(1)}MB for asset="${assetId}"`
       );
-      return tempOutput;
+      return { tempPath: tempOutput, renditionId };
     } catch (err: any) {
       await AssetRendition.update(
         { status: "failed" },

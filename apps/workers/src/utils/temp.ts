@@ -21,13 +21,19 @@ export async function writeTempFile(
   return filePath;
 }
 
-//Delete temp file
+export function allocateTempPath(extension: string): string {
+  return path.join(
+    os.tmpdir(),
+    `dam-${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`
+  );
+}
+
 export async function cleanTempFile(filePath: string): Promise<void> {
   try {
     await fs.promises.unlink(filePath);
     logger.info(`[Temp] Cleaned ${filePath}`);
   } catch {
-    //no actions to be performed
+    // file already gone — no-op
   }
 }
 

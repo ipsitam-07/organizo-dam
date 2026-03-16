@@ -155,12 +155,12 @@ describe("UploadService.cancelSession", () => {
     expect(result).toBeDefined();
   });
 
-  it("returns null when session is not found", async () => {
+  it("throws when session is not found", async () => {
     vi.mocked(uploadRepository.findSessionByIdAndUser).mockResolvedValue(null);
 
-    const result = await uploadService.cancelSession("bad-id", "user-uuid-123");
-
-    expect(result).toBeNull();
+    await expect(
+      uploadService.cancelSession("bad-id", "user-uuid-123")
+    ).rejects.toThrow("Session not found or expired");
   });
 
   it("throws when trying to cancel a completed session", async () => {

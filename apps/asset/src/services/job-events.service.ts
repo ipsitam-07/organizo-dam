@@ -3,6 +3,7 @@ import { Asset, ProcessingJob } from "@repo/database";
 import { logger } from "@repo/logger";
 import type { JobCompletedPayload } from "@repo/rabbitmq";
 import { Op } from "sequelize";
+import { totalJobsCompleted, totalJobsSubmitted } from "../metric";
 
 const REAL_JOB_TYPES = [
   "metadata",
@@ -23,6 +24,8 @@ export async function handleJobEvent(
       (renditionId ? ` rendition="${renditionId}"` : "")
   );
 
+  totalJobsSubmitted.inc();
+
   await ProcessingJob.update(
     {
       status,
@@ -34,12 +37,15 @@ export async function handleJobEvent(
   );
 
   if (status === "failed") {
+    totalJobsCompleted.inc({ status: "failed" });
     await Asset.update({ status: "failed" }, { where: { id: assetId } });
     logger.warn(
       `[JobEvent] Asset "${assetId}" marked FAILED due to job "${jobId}"`
     );
     return;
   }
+
+  totalJobsCompleted.inc({ status: "completed" });
 
   const pendingRealJobs = await ProcessingJob.count({
     where: {

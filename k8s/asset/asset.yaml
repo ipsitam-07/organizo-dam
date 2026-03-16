@@ -1,0 +1,166 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asset
+  namespace: dam-platform
+  labels:
+    app: asset
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: asset
+  template:
+    metadata:
+      labels:
+        app: asset
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3003"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: asset
+          image: dam-platform/asset:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3003
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: NODE_ENV
+            - name: PORT
+              value: "3003"
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: POSTGRES_HOST
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: POSTGRES_PORT
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dam-secrets
+                  key: POSTGRES_PASSWORD
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: REDIS_PORT
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dam-secrets
+                  key: REDIS_PASSWORD
+            - name: RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: RABBITMQ_HOST
+            - name: RABBITMQ_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: RABBITMQ_PORT
+            - name: RABBITMQ_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: RABBITMQ_USER
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dam-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: RABBITMQ_VHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: RABBITMQ_VHOST
+            - name: MINIO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: MINIO_ENDPOINT
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: MINIO_ACCESS_KEY
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dam-secrets
+                  key: MINIO_SECRET_KEY
+            - name: MINIO_BUCKET_ASSETS
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: MINIO_BUCKET_ASSETS
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dam-secrets
+                  key: JWT_SECRET
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: dam-config
+                  key: FRONTEND_URL
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health/asset
+              port: 3003
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health/asset
+              port: 3003
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: asset-service
+  namespace: dam-platform
+  labels:
+    app: asset
+spec:
+  selector:
+    app: asset
+  ports:
+    - name: http
+      port: 3003
+      targetPort: 3003
+  type: ClusterIP

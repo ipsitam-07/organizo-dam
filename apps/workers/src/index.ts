@@ -5,9 +5,13 @@ import { ThumbnailWorker } from "./workers/thumbnail.worker";
 import { TranscodeWorker } from "./workers/transcode.worker";
 import { ImageWorker } from "./workers/image.worker";
 import { DocumentWorker } from "./workers/document.worker";
+import { startMetricsServer } from "./metric";
 
 async function main() {
   logger.info("[Workers] Starting DAM Platform worker pipeline...");
+
+  const metricsPort = Number(process.env.METRICS_PORT) || 9090;
+  startMetricsServer(metricsPort);
   const workers = [
     new AssemblyWorker(),
     new MetadataWorker(),

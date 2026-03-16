@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: dam-platform
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "15692"
+        prometheus.io/path: "/metrics"
+    spec:
+      initContainers:
+        - name: rabbitmq-init
+          image: curlimages/curl:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for RabbitMQ to start..."
+              sleep 20
+              echo "Creating vhost: dam"
+              curl -s -u dam_rabbit:$(RABBITMQ_PASSWORD) \
+                -X PUT http://rabbitmq-service:15672/api/vhosts/dam
+              echo "Setting permissions..."
+              curl -s -u dam_rabbit:$(RABBITMQ_PASSWORD) \
+                -X PUT http://rabbitmq-service:15672/api/permissions/dam/dam_rabbit \
+                -H "Content-Type: application/json" \
+                -d '{"configure":".*","write":".*","read":".*"}'
+              echo "RabbitMQ vhost setup complete."
+          env:
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dam-secrets
+                  key: RABBITMQ_PASSWORD
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.13-management-alpine
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: management
+              containerPort: 15672
+            - name: prometheus
+              containerPort: 15692
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: "dam_rabbit"
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: dam-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: RABBITMQ_DEFAULT_VHOST
+              value: "dam"
+            - name: RABBITMQ_ENABLED_PLUGINS_FILE
+              value: "/etc/rabbitmq/enabled_plugins"
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+            - name: rabbitmq-plugins
+              mountPath: /etc/rabbitmq/enabled_plugins
+              subPath: enabled_plugins
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          livenessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - check_port_connectivity
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 10
+      volumes:
+        - name: rabbitmq-data
+          emptyDir: {}
+        - name: rabbitmq-plugins
+          configMap:
+            name: rabbitmq-plugins-config
+
+---
+# ConfigMap to enable the Prometheus metrics plugin
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-plugins-config
+  namespace: dam-platform
+data:
+  enabled_plugins: |
+    [rabbitmq_management,rabbitmq_prometheus].
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: dam-platform
+  labels:
+    app: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672
+    - name: prometheus
+      port: 15692
+      targetPort: 15692
+  type: ClusterIP

@@ -1,0 +1,15 @@
+export const THUMBNAIL_SUPPORTED_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/tiff",
+  "image/avif",
+  "video/mp4",
+  "video/quicktime",
+  "video/x-msvideo",
+  "video/webm",
+  "video/x-matroska",
+  "video/mpeg",
+  "video/3gpp",
+]);

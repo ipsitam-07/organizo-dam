@@ -8,7 +8,7 @@ export class AssetController {
     try {
       const result = await assetService.listAssets(
         req.user!.id,
-        req.query as any
+        (req as any).validatedQuery
       );
       res.json(result);
     } catch (err) {
@@ -79,6 +79,21 @@ export class AssetController {
     }
   }
 
+  async preview(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await assetService.getDownloadUrl(
+        req.params.id,
+        req.user!.id,
+        undefined,
+        { ip: req.ip, userAgent: req.headers["user-agent"] },
+        true
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   //tags
   async addTag(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -135,6 +150,20 @@ export class AssetController {
         req.body
       );
       res.status(201).json({ data: link });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  //Share link revoke
+  async revokeShareLink(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      await assetService.revokeShareLink(
+        req.params.id,
+        req.params.linkId,
+        req.user!.id
+      );
+      res.status(204).send();
     } catch (err) {
       next(err);
     }

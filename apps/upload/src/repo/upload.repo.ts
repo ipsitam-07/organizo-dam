@@ -1,7 +1,8 @@
+import { CreationAttributes } from "sequelize";
 import { Asset, UploadSession } from "@repo/database";
 
 export class UploadRepository {
-  async createUploadSession(data: any) {
+  async createUploadSession(data: CreationAttributes<UploadSession>) {
     return await UploadSession.create(data);
   }
 
@@ -18,9 +19,9 @@ export class UploadRepository {
   }
 
   async updateSessionStatus(
-    session: any,
-    status: string,
-    additionalData: any = {}
+    session: UploadSession,
+    status: UploadSession["status"],
+    additionalData: { completed_at?: Date } = {}
   ) {
     return await session.update({ status, ...additionalData });
   }
@@ -28,11 +29,11 @@ export class UploadRepository {
   async getUserSessions(userId: string) {
     return await UploadSession.findAll({
       where: { user_id: userId },
-      order: [["createdAt", "DESC"]],
+      order: [["created_at", "DESC"]],
     });
   }
 
-  async createAsset(data: any) {
+  async createAsset(data: CreationAttributes<Asset>) {
     return await Asset.create(data);
   }
 }

@@ -12,6 +12,6 @@
     "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../packages/docs/src/auth.docs.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -10,6 +10,7 @@ vi.mock("../src/repo/asset.repo", () => ({
     findAll: vi.fn(),
     findByIdAndUser: vi.fn(),
     findById: vi.fn(),
+    findAllRenditions: vi.fn(),
     updateStatus: vi.fn(),
     getProcessingStatus: vi.fn(),
     logDownload: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("../src/repo/asset.repo", () => ({
     removeTag: vi.fn(),
     findTagById: vi.fn(),
     createShareLink: vi.fn(),
+    deleteShareLink: vi.fn(),
     findShareLinkByToken: vi.fn(),
     incrementShareLinkDownloads: vi.fn(),
     getStats: vi.fn(),
@@ -65,7 +67,7 @@ vi.mock("@repo/auth", () => ({
 vi.mock("@repo/config", () => ({
   config: {
     minio: {
-      buckets: { chunks: "chunks", renditions: "renditions" },
+      buckets: { assets: "assets", chunks: "chunks", renditions: "renditions" },
     },
   },
 }));
@@ -141,16 +143,85 @@ describe("AssetService.getAsset", () => {
 
 //deleteAsset
 describe("AssetService.deleteAsset", () => {
-  it("deletes MinIO object and destroys DB row", async () => {
+  it("deletes the original file and destroys the DB row", async () => {
     vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(
       mockAsset as any
+    );
+    vi.mocked(assetRepository.findAllRenditions).mockResolvedValue([]);
+    vi.mocked(storage.deleteObject).mockResolvedValue(undefined);
+
+    await assetService.deleteAsset("asset-1", "user-1");
+
+    expect(storage.deleteObject).toHaveBeenCalledWith("assets", "tus-abc");
+    expect(mockAsset.destroy).toHaveBeenCalled();
+  });
+
+  it("deletes all rendition objects from MinIO before destroying the DB row", async () => {
+    const renditions = [
+      { id: "r1", storage_key: "asset-1/thumbnail.jpg", label: "thumbnail" },
+      { id: "r2", storage_key: "asset-1/medium.webp", label: "medium" },
+      { id: "r3", storage_key: "asset-1/360p.mp4", label: "360p" },
+    ];
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(
+      mockAsset as any
+    );
+    vi.mocked(assetRepository.findAllRenditions).mockResolvedValue(
+      renditions as any
     );
     vi.mocked(storage.deleteObject).mockResolvedValue(undefined);
 
     await assetService.deleteAsset("asset-1", "user-1");
 
-    expect(storage.deleteObject).toHaveBeenCalledWith("chunks", "tus-abc");
+    // Each rendition object must be deleted from the renditions bucket
+    expect(storage.deleteObject).toHaveBeenCalledWith(
+      expect.stringContaining("rendition"),
+      "asset-1/thumbnail.jpg"
+    );
+    expect(storage.deleteObject).toHaveBeenCalledWith(
+      expect.stringContaining("rendition"),
+      "asset-1/medium.webp"
+    );
+    expect(storage.deleteObject).toHaveBeenCalledWith(
+      expect.stringContaining("rendition"),
+      "asset-1/360p.mp4"
+    );
+
+    // Original must still be deleted too
+    expect(storage.deleteObject).toHaveBeenCalledWith("assets", "tus-abc");
+
+    // 3 renditions + 1 original = 4 total deleteObject calls
+    expect(storage.deleteObject).toHaveBeenCalledTimes(4);
+
     expect(mockAsset.destroy).toHaveBeenCalled();
+  });
+
+  it("continues and deletes the original even when a rendition delete fails", async () => {
+    const renditions = [
+      { id: "r1", storage_key: "asset-1/thumbnail.jpg", label: "thumbnail" },
+    ];
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(
+      mockAsset as any
+    );
+    vi.mocked(assetRepository.findAllRenditions).mockResolvedValue(
+      renditions as any
+    );
+    vi.mocked(storage.deleteObject)
+      .mockRejectedValueOnce(new Error("MinIO unavailable")) // rendition delete fails
+      .mockResolvedValueOnce(undefined); // original delete succeeds
+
+    await assetService.deleteAsset("asset-1", "user-1");
+
+    // Still deleted original and destroyed DB row
+    expect(storage.deleteObject).toHaveBeenCalledTimes(2);
+    expect(mockAsset.destroy).toHaveBeenCalled();
+  });
+
+  it("throws NotFoundError when asset does not belong to user", async () => {
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(null);
+    await expect(assetService.deleteAsset("asset-1", "user-1")).rejects.toThrow(
+      "Asset not found"
+    );
+    expect(storage.deleteObject).not.toHaveBeenCalled();
   });
 });
 
@@ -330,5 +401,46 @@ describe("AssetService.resolveShareLink", () => {
     await expect(
       assetService.resolveShareLink("token-123")
     ).rejects.toMatchObject({ statusCode: 410 });
+  });
+});
+
+//revokeShareLink
+describe("AssetService.revokeShareLink", () => {
+  it("deletes the share link and returns nothing", async () => {
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(
+      mockAsset as any
+    );
+    vi.mocked(assetRepository.deleteShareLink).mockResolvedValue(1);
+
+    await expect(
+      assetService.revokeShareLink("asset-1", "link-1", "user-1")
+    ).resolves.toBeUndefined();
+
+    expect(assetRepository.deleteShareLink).toHaveBeenCalledWith(
+      "link-1",
+      "asset-1",
+      "user-1"
+    );
+  });
+
+  it("throws NotFoundError when the asset does not belong to the user", async () => {
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(null);
+
+    await expect(
+      assetService.revokeShareLink("asset-1", "link-1", "user-1")
+    ).rejects.toThrow("Asset not found");
+
+    expect(assetRepository.deleteShareLink).not.toHaveBeenCalled();
+  });
+
+  it("throws NotFoundError when the link does not exist or belong to this asset", async () => {
+    vi.mocked(assetRepository.findByIdAndUser).mockResolvedValue(
+      mockAsset as any
+    );
+    vi.mocked(assetRepository.deleteShareLink).mockResolvedValue(0);
+
+    await expect(
+      assetService.revokeShareLink("asset-1", "bad-link", "user-1")
+    ).rejects.toThrow("Share link not found");
   });
 });

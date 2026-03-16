@@ -9,6 +9,11 @@ import {
 import { Asset, ProcessingJob, initDb } from "@repo/database";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
+import {
+  jobProcessedTotal,
+  jobProcessingTimeSeconds,
+  jobErrorsTotal,
+} from "../metric";
 
 // BaseWorker
 
@@ -35,7 +40,7 @@ export abstract class BaseWorker {
   abstract process(
     payload: UploadCompletePayload,
     job: ProcessingJob
-  ): Promise<void>;
+  ): Promise<string | void>; // return renditionId if applicable
 
   // Startup
 
@@ -100,36 +105,70 @@ export abstract class BaseWorker {
       ?.count;
     const attempts = typeof xDeathCount === "number" ? xDeathCount + 1 : 1;
 
-    const job = await ProcessingJob.create({
-      asset_id: assetId,
-      amqp_message_id: msg.properties.messageId ?? crypto.randomUUID(),
-      amqp_exchange: EXCHANGES.UPLOADS,
-      amqp_routing_key: this.routingKey,
-      amqp_queue: this.queueName,
-      amqp_delivery_tag: msg.fields.deliveryTag,
-      job_type: this.jobType,
-      status: "queued",
-      attempts,
-      max_attempts: 3,
+    const existingJob = await ProcessingJob.findOne({
+      where: {
+        asset_id: assetId,
+        job_type: this.jobType,
+        status: "queued",
+      },
+      order: [["queued_at", "ASC"]],
     });
 
-    await job.update({ status: "active", started_at: new Date() });
+    const job = existingJob
+      ? existingJob
+      : await ProcessingJob.create({
+          asset_id: assetId,
+          amqp_message_id: msg.properties.messageId ?? crypto.randomUUID(),
+          amqp_exchange: EXCHANGES.UPLOADS,
+          amqp_routing_key: this.routingKey,
+          amqp_queue: this.queueName,
+          amqp_delivery_tag: msg.fields.deliveryTag,
+          job_type: this.jobType,
+          status: "queued",
+          attempts,
+          max_attempts: 3,
+        });
+
+    await job.update({
+      status: "active",
+      started_at: new Date(),
+      amqp_delivery_tag: msg.fields.deliveryTag,
+      attempts,
+    });
 
     await Asset.update(
       { status: "processing" },
       { where: { id: assetId, status: "queued" } }
     );
 
+    const stopTimer = jobProcessingTimeSeconds.startTimer({
+      worker_type: this.jobType,
+    });
     try {
-      await this.process(payload, job);
+      const renditionId = await this.process(payload, job);
+
+      stopTimer();
+      jobProcessedTotal.inc({
+        worker_type: this.jobType,
+      });
+
       await job.update({
         status: "completed",
         progress: 100,
         completed_at: new Date(),
       });
-      await this.publishResult(assetId, job.id, "completed");
+      await this.publishResult(
+        assetId,
+        job.id,
+        "completed",
+        undefined,
+        renditionId ?? undefined
+      );
       logger.info(`[${this.workerName}] Done for asset="${assetId}"`);
     } catch (err: any) {
+      stopTimer();
+      jobErrorsTotal.inc({ worker_type: this.jobType });
+
       logger.error(`[${this.workerName}] Failed for asset="${assetId}"`, {
         error: err.message,
       });

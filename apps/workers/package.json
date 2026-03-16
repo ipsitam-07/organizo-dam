@@ -19,6 +19,7 @@
     "@repo/rabbitmq": "workspace:*",
     "amqplib": "^0.10.9",
     "fluent-ffmpeg": "^2.1.3",
+    "prom-client": "^15.1.3",
     "sharp": "^0.34.5"
   },
   "devDependencies": {

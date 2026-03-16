@@ -14,14 +14,14 @@ export function useDeleteAsset() {
       });
       qc.setQueriesData<AssetListResponse>(
         { queryKey: queryKeys.assets.all() },
-        (old) =>
-          old
-            ? {
-                ...old,
-                data: old.data.filter((a) => a.id !== id),
-                total: old.total - 1,
-              }
-            : old
+        (old) => {
+          if (!old || !Array.isArray(old.data)) return old;
+          return {
+            ...old,
+            data: old.data.filter((a) => a.id !== id),
+            total: old.total - 1,
+          };
+        }
       );
       return { snapshots };
     },
@@ -31,7 +31,11 @@ export function useDeleteAsset() {
     onSettled: (_d, _e, id) => {
       qc.removeQueries({ queryKey: queryKeys.assets.all() });
       qc.invalidateQueries({ queryKey: queryKeys.assets.all() });
-      qc.removeQueries({ queryKey: ["assets", "detail", id] });
+
+      qc.removeQueries({ queryKey: queryKeys.assets.thumbnail(id) });
+      qc.removeQueries({ queryKey: queryKeys.assets.previewUrl(id) });
+      qc.removeQueries({ queryKey: queryKeys.assets.renditions(id) });
+      qc.removeQueries({ queryKey: queryKeys.assets.downloadUrl(id) });
     },
   });
 }

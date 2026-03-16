@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "auth",
   "version": "1.0.0",
   "description": "DAM Platform API Gateway & Auth Service",
   "main": "dist/index.js",
@@ -19,15 +19,16 @@
     "@repo/config": "workspace:*",
     "@repo/database": "workspace:*",
     "@repo/logger": "workspace:*",
+    "@repo/docs": "workspace:*",
     "@repo/rate-limit": "workspace:*",
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "redis": "^5.11.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "js-yaml": "^4.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -39,7 +40,6 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@vitest/coverage-v8": "^2.0.0",
-    "@types/js-yaml": "^4.0.9",
     "supertest": "^7.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.3.3",

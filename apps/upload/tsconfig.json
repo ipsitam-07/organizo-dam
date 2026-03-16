@@ -11,6 +11,6 @@
     "moduleResolution": "node",
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../packages/docs/src/upload.docs.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -109,6 +109,13 @@ export class AssetRepository {
     return asset;
   }
 
+  async findAllRenditions(assetId: string) {
+    return AssetRendition.findAll({
+      where: { asset_id: assetId },
+      attributes: ["id", "storage_key", "label"],
+    });
+  }
+
   async findById(id: string) {
     return Asset.findByPk(id);
   }
@@ -202,6 +209,12 @@ export class AssetRepository {
   async incrementShareLinkDownloads(shareLinkId: string) {
     return ShareLink.increment("download_count", {
       where: { id: shareLinkId },
+    });
+  }
+
+  async deleteShareLink(linkId: string, assetId: string, userId: string) {
+    return ShareLink.destroy({
+      where: { id: linkId, asset_id: assetId, created_by: userId },
     });
   }
 }

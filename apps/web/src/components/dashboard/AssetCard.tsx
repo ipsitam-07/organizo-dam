@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { MoreHorizontal, Download, Share2, Trash2, Eye } from "lucide-react";
-import { cn, formatBytes, formatDate, mimeLabel, fileExt } from "@/lib/utils";
+import {
+  cn,
+  formatBytes,
+  formatDate,
+  mimeLabel,
+  fileExt,
+} from "@/utils/utility";
 import type { Props } from "@/types/props.types";
 import { MIME_COLORS, STATUS_DOT } from "@/constants/styles.constants";
 import { useCardThumbnail } from "@/hooks/useCardThumbnail";

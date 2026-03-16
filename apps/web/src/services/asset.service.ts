@@ -72,6 +72,15 @@ export const assetsApi = {
     );
     return data.url;
   },
+
+  // GET /api/assets/:id/preview
+  getPreviewUrl: async (id: string): Promise<string> => {
+    const { data } = await apiClient.get<{ url: string }>(
+      API_ENDPOINTS.ASSETS.PREVIEW(id)
+    );
+    return data.url;
+  },
+
   // POST /api/assets/:id/tags
   addTag: async (id: string, name: string): Promise<Tag> => {
     const { data } = await apiClient.post<{ data: Tag }>(

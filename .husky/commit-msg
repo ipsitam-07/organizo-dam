@@ -1,4 +1,4 @@
-echo "✅ chekcing commit message"
+echo "✅ checking commit message"
 
 pnpm commitlint --edit "$1"
 

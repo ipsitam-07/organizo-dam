@@ -1,0 +1,118 @@
+#Service monitor: Workers (Service B)
+#Metrics from every worker pod
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: workers-monitor
+  namespace: dam-platform
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: workers
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - dam-platform
+
+---
+#Service Monitor: (Service C)
+#Metrics from every asset service pod
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: asset-monitor
+  namespace: dam-platform
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: asset
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - dam-platform
+
+---
+#Service Monitor: RabbitMQ
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rabbitmq-monitor
+  namespace: dam-platform
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  endpoints:
+    - port: prometheus
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - dam-platform
+
+---
+#PrometheusRule: AlertingRules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dam-alerts
+  namespace: dam-platform
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: dam-workers
+      interval: 30s
+      rules:
+        # Alert when worker error rate is high
+        - alert: WorkerHighErrorRate
+          expr: |
+            rate(job_errors_total[5m]) > 0.1
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Worker error rate is high"
+            description: "Worker pod {{ $labels.pod }} has error rate {{ $value }} errors/sec"
+
+        # Alert when job processing time spikes
+        - alert: WorkerSlowProcessing
+          expr: |
+            histogram_quantile(0.95, rate(job_processing_time_seconds_bucket[5m])) > 30
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "P95 job processing time exceeds 30s"
+            description: "95th percentile processing time is {{ $value }}s"
+
+        # Alert when HPA is at max replicas (cluster may be under-provisioned)
+        - alert: WorkersAtMaxReplicas
+          expr: |
+            kube_horizontalpodautoscaler_status_current_replicas{
+              horizontalpodautoscaler="workers-hpa",
+              namespace="dam-platform"
+            } >= 10
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Workers HPA is at maximum replicas"
+            description: "Workers have been at 10 replicas for 5 minutes. Consider increasing maxReplicas."
+---

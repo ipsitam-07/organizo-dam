@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import swaggerUi from "swagger-ui-express";
 import { config } from "@repo/config";
 import { logger } from "@repo/logger";
 import { initDb } from "@repo/database";
@@ -12,6 +13,7 @@ import { uploadService } from "./services/upload.service";
 import uploadRoutes from "./routes/upload.route";
 import { errorHandler } from "./middleware/error.middleware";
 import { uploadLimiter } from "@repo/rate-limit";
+import { buildSwaggerDoc, uploadSchemas, uploadPaths } from "@repo/docs";
 
 export const app = express();
 app.use(helmet());
@@ -30,6 +32,20 @@ app.use((req, _res, next) => {
   logger.info(`[${req.method}] ${req.path}`);
   next();
 });
+
+const swaggerDoc = buildSwaggerDoc({
+  title: "Organizo DAM — Upload Service",
+  description:
+    "Upload API: TUS resumable upload initiation and session management.\n\n" +
+    "All endpoints require a Bearer JWT. The TUS core endpoints (`/api/upload/core`) " +
+    "follow the [TUS protocol](https://tus.io/protocols/resumable-upload).",
+  serverUrl: `http://localhost:${config.ports.upload}`,
+  serverDescription: "Upload service",
+  schemas: { ...uploadSchemas },
+  paths: { ...uploadPaths },
+});
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 //Health check route
 app.get("/health/upload", (_req, res) => {
@@ -113,9 +129,13 @@ const startServer = async () => {
       logging: config.env === "development",
     });
 
-    app.listen(config.ports.upload, () => {
-      logger.info(`[Upload Service] Listening on port ${config.ports.upload}`);
-    });
+    if (process.env.NODE_ENV !== "test") {
+      app.listen(config.ports.upload, () => {
+        logger.info(
+          `[Upload Service] Listening on port ${config.ports.upload}`
+        );
+      });
+    }
     await rabbitMQService.connect();
   } catch (error) {
     logger.error("[Upload Service] Failed to start:", { error });
