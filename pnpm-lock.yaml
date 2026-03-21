@@ -694,9 +694,15 @@ importers:
       '@types/amqplib':
         specifier: ^0.10.8
         version: 0.10.8
+      '@vitest/coverage-v8':
+        specifier: ^2.0.0
+        version: 2.1.9(vitest@2.1.9(@types/node@25.3.0)(jsdom@25.0.1)(lightningcss@1.31.1))
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@25.3.0)(jsdom@25.0.1)(lightningcss@1.31.1)
 
   packages/rate-limit:
     dependencies:

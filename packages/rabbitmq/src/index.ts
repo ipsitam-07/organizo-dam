@@ -36,7 +36,7 @@ export class RabbitMQClient {
         this.publishChannel = await this.connection.createChannel();
         this.consumeChannel = await this.connection.createChannel();
 
-        await this.consumeChannel.prefetch(1);
+        await this.consumeChannel.prefetch(2);
 
         logger.info(
           `[RabbitMQ:${this.serviceName}] Connected successfully (attempt ${attempt})`
